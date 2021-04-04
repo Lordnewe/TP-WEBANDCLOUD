@@ -1,7 +1,8 @@
 package foo;
 
 import java.io.IOException;
-import java.util.Random;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -21,18 +22,27 @@ public class PetitionServlet extends HttpServlet {
 		response.setContentType("text/html");
 		response.setCharacterEncoding("UTF-8");
 
-		Random r = new Random();
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 
 		// Création des pétitions
 		for (int i = 0; i < 50; i++) {
 			for (int j = 0; j < 10; j++) {
-				Entity e = new Entity("PU", "P" + i + "_" + "U"+j);
-				e.setProperty("firstName", "My name is" + j);
-				e.setProperty("body", "Vote for my "+i+","+j);
-				datastore.put(e);
-				response.getWriter().print("<li> created post:" + e.getKey() + "<br>");
+
+				Entity p = new Entity("Petition", new SimpleDateFormat("s-m-H") + "U" + j); // ligne à modifier pour saler les clés
+				p.setProperty("owner", "U" + j);
+				p.setProperty("date", new Date());
+				p.setProperty("body", "Please vote for my P" + i);
+				p.setProperty("tag", "#marredezoom");
+				p.setProperty("goal", getRandomNumber(1000, 100000) );
+				
+				datastore.put(p);
+				response.getWriter().print("<li> created post:" + p.getKey() + "<br>");
 			}
 		}
 	}
+	
+	public int getRandomNumber(int min, int max) {
+	    return (int) ((Math.random() * (max - min)) + min);
+	}
+	
 }
