@@ -40,22 +40,28 @@ public class PetitionServlet extends HttpServlet {
 				}
 												
 				Entity p = new Entity("Petition", new Timestamp(date.getTime()) + "p" + i);
-				p.setProperty("owner", "U" + getRandomNumber(1,2000));
+				p.setProperty("owner", "U" + getRandomNumber(0,2000));
 				p.setProperty("date", new Date());
 				p.setProperty("body", "Please vote for my Petition, pretty please <3 " + i);
 				
 				
 				
 				ArrayList<String> arrayTags = new ArrayList<String>();
-				while(arrayTags.size() < 50) {
+				
+				do {
 					arrayTags.add("#TAG"+ getRandomNumber(0,50));
-				}
+				}while(arrayTags.size() < 50);
 				p.setProperty("tags", arrayTags.get(getRandomNumber(0,50)));
 				
 				p.setProperty("goal", getRandomNumber(1000, 100000) );
 				
 				
-				p.setProperty("votants",);
+				ArrayList<String> arrayVotants = new ArrayList<String>();
+				do {
+					arrayVotants.add("U"+ getRandomNumber(0,2000));
+				}while(arrayVotants.size() < 2000);
+				
+				p.setProperty("votants",arrayVotants.get(getRandomNumber(0,2000)));
 				
 				
 				datastore.put(p);
