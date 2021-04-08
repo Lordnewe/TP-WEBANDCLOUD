@@ -38,8 +38,10 @@ public class PetitionServlet extends HttpServlet {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				
+				date = new Timestamp(date.getTime());
 												
-				Entity p = new Entity("Petition", new Timestamp(date.getTime()) + "p" + i);
+				Entity p = new Entity("Petition", new Timestamp(date.getTime()) + "P" + i);
 				p.setProperty("owner", "U" + getRandomNumber(0,2000));
 				p.setProperty("date", new Date());
 				p.setProperty("body", "Please vote for my Petition, pretty please <3 " + i);
