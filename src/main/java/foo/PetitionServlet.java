@@ -1,7 +1,11 @@
 package foo;
 
 import java.io.IOException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 import javax.servlet.annotation.WebServlet;
@@ -25,24 +29,56 @@ public class PetitionServlet extends HttpServlet {
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 
 		// Création des pétitions
-		for (int i = 0; i < 50; i++) {
-			for (int j = 0; j < 10; j++) {
-
-				Entity p = new Entity("Petition", new SimpleDateFormat("s-m-H") + "U" + j); // ligne à modifier pour saler les clés
-				p.setProperty("owner", "U" + j);
+		for (int i = 0; i < 500; i++) {
+			Date date = new Date();
+				
+				try {
+					 date = new SimpleDateFormat("dd/mm/yyyy").parse(getDate());
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+												
+				Entity p = new Entity("Petition", new Timestamp(date.getTime()) + "p" + i);
+				p.setProperty("owner", "U" + getRandomNumber(1,2000));
 				p.setProperty("date", new Date());
-				p.setProperty("body", "Please vote for my P" + i);
-				p.setProperty("tag", "#marredezoom");
+				p.setProperty("body", "Please vote for my Petition, pretty please <3 " + i);
+				
+				
+				
+				ArrayList<String> arrayTags = new ArrayList<String>();
+				while(arrayTags.size() < 50) {
+					arrayTags.add("#TAG"+ getRandomNumber(0,50));
+				}
+				p.setProperty("tags", arrayTags.get(getRandomNumber(0,50)));
+				
 				p.setProperty("goal", getRandomNumber(1000, 100000) );
+				
+				
+				p.setProperty("votants",);
+				
 				
 				datastore.put(p);
 				response.getWriter().print("<li> created post:" + p.getKey() + "<br>");
-			}
+			
 		}
 	}
 	
 	public int getRandomNumber(int min, int max) {
 	    return (int) ((Math.random() * (max - min)) + min);
 	}
+	
+	public String getDate() {
+		int day = 0, month = 0, year = 0;
+		
+		day = 1 + (int)(Math.random() * ((30 - 1) + 1));
+		
+		month = 1 + (int)(Math.random() * ((12 - 1) + 1));
+		
+		year = 2019 + (int)(Math.random() * ((2021 - 2019) + 1));
+			
+		return day+"/"+month+"/"+year;
+	}
+	
 	
 }

@@ -26,7 +26,7 @@ public class UserServlet extends HttpServlet {
 		response.getWriter().print("<h1>Liste des utilisateurs créés</h1><br>");
 
 		// Create users
-		for (int i = 0; i < 500; i++) {
+		for (int i = 0; i < 2000; i++) {
 			Entity u = new Entity("User", "U" + i);
 			u.setProperty("firstName", "first" + i);
 			u.setProperty("lastName", "last" + i);
