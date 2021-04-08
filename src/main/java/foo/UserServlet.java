@@ -26,16 +26,16 @@ public class UserServlet extends HttpServlet {
 		response.getWriter().print("<h1>Liste des utilisateurs créés</h1><br>");
 
 		// Create users
-		for (int i = 0; i < 500; i++) {
-			Entity e = new Entity("User", "u" + i);
-			e.setProperty("firstName", "first" + i);
-			e.setProperty("lastName", "last" + i);
-			e.setProperty("age", r.nextInt(100) + 1);
+		for (int i = 0; i < 2000; i++) {
+			Entity u = new Entity("User", "U" + i);
+			u.setProperty("firstName", "first" + i);
+			u.setProperty("lastName", "last" + i);
+			u.setProperty("age", r.nextInt(100) + 1);
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-			datastore.put(e);
+			datastore.put(u);
 
-			response.getWriter().print(e.getKey() + "<br>");
+			response.getWriter().print(u.getKey() + "<br>");
 
 		}
 	}
