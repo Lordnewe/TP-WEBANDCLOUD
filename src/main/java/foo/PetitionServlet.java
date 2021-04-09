@@ -49,25 +49,32 @@ public class PetitionServlet extends HttpServlet {
 				
 				
 				ArrayList<String> arrayTags = new ArrayList<String>();
-				
+				arrayTags.clear();
+				int arraySize = getRandomNumber(1,50);
 				do {
 					arrayTags.add("#TAG"+ getRandomNumber(0,50));
-				}while(arrayTags.size() < 50);
-				p.setProperty("tags", arrayTags.get(getRandomNumber(0,50)));
+				}while(arrayTags.size() < arraySize);
+				p.setProperty("tags", arrayTags);
 				
 				p.setProperty("goal", getRandomNumber(1000, 100000) );
 				
 				
 				ArrayList<String> arrayVotants = new ArrayList<String>();
+				arrayVotants.clear();
+				arraySize = getRandomNumber(100,2000);
+				int nbVotants = 0;
 				do {
 					arrayVotants.add("U"+ getRandomNumber(0,2000));
-				}while(arrayVotants.size() < 2000);
+					nbVotants++;
+				}while(arrayVotants.size() < arraySize);
 				
-				p.setProperty("votants",arrayVotants.get(getRandomNumber(0,2000)));
+				p.setProperty("votants",arrayVotants);
+				
+				p.setProperty("nbVotants",nbVotants);
 				
 				
 				datastore.put(p);
-				response.getWriter().print("<li> created post:" + p.getKey() + "<br>");
+				response.getWriter().print("<li> created petition:" + p.getKey() + "<br>");
 			
 		}
 	}
