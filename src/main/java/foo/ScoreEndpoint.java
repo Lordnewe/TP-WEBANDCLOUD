@@ -222,9 +222,41 @@ public class ScoreEndpoint {
 	}
 	
 	//TINYPET	
-	@ApiMethod(name = "myPetCreated", httpMethod = HttpMethod.GET)
-	public List<Entity> myPet(@Named("Owner") String owner) {
-		Query q = new Query("Petition").setFilter(new FilterPredicate("Owner", FilterOperator.EQUAL, owner));
+	@ApiMethod(name = "myPetitions", httpMethod = HttpMethod.GET)
+	public List<Entity> myPetitions(@Named("owner") String owner) {
+		Query q = new Query("Petition").setFilter(new FilterPredicate("owner", FilterOperator.EQUAL, owner));
+
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		PreparedQuery pq = datastore.prepare(q);
+		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+		return result;
+	}
+	
+	
+	@ApiMethod(name = "topTen", httpMethod = HttpMethod.GET)
+	public List<Entity> topTen() {
+		Query q = new Query("Petition").addSort("nbVotants", SortDirection.DESCENDING);
+
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		PreparedQuery pq = datastore.prepare(q);
+		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+
+		return result;
+	}
+	
+	@ApiMethod(name = "signedPetitions", httpMethod = HttpMethod.GET)
+	public List<Entity> signedPetitions(@Named("votants") String votant) {
+		Query q = new Query("Petition").setFilter(new FilterPredicate("votants", FilterOperator.EQUAL, votant));
+
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		PreparedQuery pq = datastore.prepare(q);
+		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
+		return result;
+	}
+	
+	@ApiMethod(name = "petitionsTag", httpMethod = HttpMethod.GET)
+	public List<Entity> petitionsTag(@Named("tags") String tag) {
+		Query q = new Query("Petition").setFilter(new FilterPredicate("tags", FilterOperator.EQUAL, tag));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
