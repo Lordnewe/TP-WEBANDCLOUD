@@ -1,5 +1,7 @@
 package foo;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,6 +37,7 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.repackaged.com.google.protobuf.Timestamp;
 
 @Api(name = "myApi",
      version = "v1",
@@ -269,12 +272,12 @@ public class ScoreEndpoint {
 
 		if (user == null) {
 			throw new UnauthorizedException("Invalid credentials");
-		}
+		}		
 
-		Entity e = new Entity("Petition", new Timestamp(date.getTime()) + "P" + i);
-		p.setProperty("owner", user.getEmail());
-		p.setProperty("date", new Date());
-		p.setProperty("body", pm.body);
+		Entity e = new Entity("Petition", Long.MAX_VALUE-(new Date()).getTime()+":"+user.getEmail());
+		e.setProperty("owner", user.getEmail());
+		e.setProperty("date", new Date());
+		e.setProperty("body", p.body);
 		
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		Transaction txn = datastore.beginTransaction();
