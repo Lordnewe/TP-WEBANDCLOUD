@@ -5,5 +5,5 @@ public class Petition {
 	public String body;
 	public String url;
 	
-	public PostMessage() {}
+	public Petition() {}
 }
