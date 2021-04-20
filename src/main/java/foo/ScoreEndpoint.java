@@ -51,7 +51,7 @@ public class ScoreEndpoint {
 
 	Random r = new Random();
 
-	@ApiMethod(name = "getRandom", httpMethod = HttpMethod.GET)
+	/* @ApiMethod(name = "getRandom", httpMethod = HttpMethod.GET)
 	public RandomResult random() {
 		return new RandomResult(r.nextInt(6) + 1);
 	}
@@ -219,7 +219,7 @@ public class ScoreEndpoint {
 //		datastore.put(pi);
 		txn.commit();
 		return e;
-	}
+	} */
 	
 	//TINYPET	
 	@ApiMethod(name = "myPetitions", httpMethod = HttpMethod.GET)
@@ -262,5 +262,24 @@ public class ScoreEndpoint {
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
 		return result;
+	}
+
+	@ApiMethod(name = "postNewPet", httpMethod = HttpMethod.POST)
+	public Entity postNewPet(User user, Petition p) throws UnauthorizedException {
+
+		if (user == null) {
+			throw new UnauthorizedException("Invalid credentials");
+		}
+
+		Entity e = new Entity("Petition", new Timestamp(date.getTime()) + "P" + i);
+		p.setProperty("owner", user.getEmail());
+		p.setProperty("date", new Date());
+		p.setProperty("body", pm.body);
+		
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		Transaction txn = datastore.beginTransaction();
+		datastore.put(e);
+		txn.commit();
+		return e;
 	}
 }
