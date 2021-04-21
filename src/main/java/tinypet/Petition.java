@@ -1,11 +1,7 @@
 package tinypet;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
 
 public class Petition {
 
