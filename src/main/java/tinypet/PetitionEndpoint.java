@@ -17,6 +17,8 @@ import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.EmbeddedEntity;
 
 @Api(name = "myApi",
      version = "v1",
@@ -30,6 +32,33 @@ import com.google.appengine.api.datastore.Query.SortDirection;
      )
 
 public class PetitionEndpoint {
+	
+	/**
+	 * Add new Petition
+	 * @param user
+	 * @param petition
+	 * @return
+	 */
+	@ApiMethod(name = "postNewPet", path = "petition/create", httpMethod = HttpMethod.POST)
+	public Entity postNewPet(User user, Petition petition) throws Exception{ 
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		//verify the credentials
+		if(user == null) { 
+			throw new UnauthorizedException("Invalid credentials");
+		}
+
+		Key userKey = Utilitary.getUserKey(user);
+		petition.setOwner(userKey);
+		petition.generateKey();
+		Entity petEntity = petition.toEntity();
+		List<Entity> signCounters = petition.createSignCounter(petEntity.getKey());
+		datastore.put(petEntity);
+		datastore.put(signCounters);
+		EmbeddedEntity owner = Utilitary.getEmbeddedProfile(userKey);
+		petEntity.setProperty("owner", owner);
+		//changeNumberPosts(userKey, 1);
+		return petEntity;
+	}
 
     /**
 	 * Return the petitions created by a user
@@ -83,23 +112,4 @@ public class PetitionEndpoint {
 		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
 		return result;
 	}
-
-	/* @ApiMethod(name = "postNewPet", httpMethod = HttpMethod.POST)
-	public Entity postNewPet(User user, Petition p) throws UnauthorizedException {
-
-		if (user == null) {
-			throw new UnauthorizedException("Invalid credentials");
-		}		
-
-		Entity e = new Entity("Petition", Long.MAX_VALUE-(new Date()).getTime()+":"+user.getEmail());
-		e.setProperty("owner", user.getEmail());
-		e.setProperty("date", new Date());
-		e.setProperty("body", p.body);
-		
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		Transaction txn = datastore.beginTransaction();
-		datastore.put(e);
-		txn.commit();
-		return e;
-	} */
 }
