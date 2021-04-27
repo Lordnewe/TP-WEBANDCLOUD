@@ -64,9 +64,9 @@ public class UserEndpoint {
 			newUser.setProperty("lastName", petUser.lastName);
 			newUser.setProperty("url", petUser.url);
 
-			Transaction newTinyUserTransaction = datastore.beginTransaction();
+			Transaction newUserTransaction = datastore.beginTransaction();
 			datastore.put(newUser);
-			newTinyUserTransaction.commit();
+			newUserTransaction.commit();
 			return newUser;
 		}
 		return searchQueryResult;

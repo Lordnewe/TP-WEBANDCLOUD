@@ -533,7 +533,7 @@ MyApp.Homepage = {
                         onclick: function () {
                             MyApp.Homepage.getTopTen();
                         }
-                    }, "Get your timeline"),
+                    }, "Refresh"),
                         MyApp.Homepage.loading_gif?
                             m("div",
                                 m("img", {
@@ -562,7 +562,7 @@ MyApp.Homepage = {
                                         }, "Caption"),
                                         m('th', {
                                             "style":"width:5vw"
-                                        }, "Likes"),
+                                        }, "Votes"),
                                         m('th', {
                                             "style":"width:10vw"
                                         }),
@@ -605,10 +605,10 @@ MyApp.Homepage = {
                                                     m("button", {
                                                         "class":"btn btn-success",
                                                         onclick: function () {
-                                                            MyApp.Homepage.likePost(pet.key.name);
+                                                            MyApp.Homepage.signPet(pet.key.name);
                                                         },
                                                 },
-                                                "Like")
+                                                "Sign")
                                             )
                                         ]);
                                     })
@@ -683,17 +683,17 @@ MyApp.Homepage = {
             }
         });
     },
-    likePost: function (postLiked) {
+    signPet: function (signedPet) {
 	    var data = {
-            'postLiked': postLiked,
+            'signedPet': signedPet,
             'email': MyApp.Profile.userData.email
         };
         m.request ({
 	 		method: "POST",
-            url: "_ah/api/like_api/1.0/newLike"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),
+            url: "_ah/api/myApi/v1/petition/sign"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),
             params: data,
 		}).then(function(response){
-            console.log(postLiked+ "successfully liked");
+            console.log(signedPet+ "successfully signed");
             MyApp.Homepage.getTopTen();
             m.redraw();
         });
@@ -1006,7 +1006,7 @@ MyApp.PostView = {
                     }, "Caption"),
                     m('th', {
                         "style":"width:5vw"
-                    }, "Likes"),
+                    }, "Votes"),
                     m('th', {
                         "style":"width:10vw"
                     }),
@@ -1023,7 +1023,7 @@ MyApp.PostView = {
                     }, "Caption"),
                     m('th', {
                         "style":"width:5vw"
-                    }, "Likes"),
+                    }, "Votes"),
                     m('th', {
                         "style":"width:15vw"
                     }),
@@ -1056,7 +1056,7 @@ MyApp.PostView = {
                                         m("button", {
                                             "class":"btn btn-success",
                                             onclick: function () {
-                                                MyApp.PostView.likePost(item.key.name);
+                                                MyApp.PostView.signPet(item.key.name);
                                             },
                                     },
                                     "Like your own post (weird)")
@@ -1100,10 +1100,10 @@ MyApp.PostView = {
                                         m("button", {
                                             "class":"btn btn-success float-right",
                                             onclick: function () {
-                                                MyApp.PostView.likePost(item.key.name);
+                                                MyApp.PostView.signPet(item.key.name);
                                             },
                                     },
-                                    "Like this post")
+                                    "Sign this petition")
                                 ),
                             ]);
                         }
@@ -1133,15 +1133,15 @@ MyApp.PostView = {
         });
 
     },
-	likePost: function(postLiked) {
+	signPet: function(signedPet) {
 	    var data = {
-            'postLiked': postLiked,
+            'signedPet': signedPet,
             'email': MyApp.Profile.userData.email,
             'access_token': encodeURIComponent(MyApp.Profile.userData.id)
         };
 	    m.request ({
 	 		method: "POST",
-            url: "_ah/api/like_api/1.0/newLike",
+            url: "_ah/api/myApi/v1/petition/sign",
             params: data,
 		}).then(function() {
             MyApp.User.getPets();
