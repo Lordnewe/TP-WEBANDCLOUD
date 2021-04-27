@@ -63,7 +63,7 @@ public class PetitionEndpoint {
     /**
 	 * Return the petitions created by a user
 	 * @param user
-	 * @param cursorString
+	 * @param userId
 	 * @return
 	 */
 	@ApiMethod(name = "getCreatedPetitions", path = "petitions/created/{userId}", httpMethod = ApiMethod.HttpMethod.GET)
@@ -81,9 +81,13 @@ public class PetitionEndpoint {
 		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
 		return result;
 	}
-	
-	@ApiMethod(name = "topTen", httpMethod = HttpMethod.GET)
-	public List<Entity> topTen() {
+
+	/**
+	 * Return the top ten signed petitions
+	 * @return
+	 */
+	@ApiMethod(name = "topTen", path = "petitions/topTen", httpMethod = ApiMethod.HttpMethod.GET)
+	public List<Entity> topTen() throws Exception{
 		Query q = new Query("Petition").addSort("nbVotants", SortDirection.DESCENDING);
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -92,9 +96,21 @@ public class PetitionEndpoint {
 
 		return result;
 	}
-	
-	@ApiMethod(name = "signedPetitions", httpMethod = HttpMethod.GET)
-	public List<Entity> signedPetitions(@Named("votants") String votant) {
+
+    /**
+	 * Return the petitions signed by a user
+	 * @param user
+	 * @param userId
+	 * @return
+	 */
+	@ApiMethod(name = "getSignedPetitions", path = "petitions/signed/{userId}", httpMethod = ApiMethod.HttpMethod.GET)
+	public List<Entity> getSignedPetitions(User user, 
+			@Named("votants") String votant) throws Exception{
+		
+        if(user == null) {
+			throw new UnauthorizedException("Invalid credentials");
+		}
+		
 		Query q = new Query("Petition").setFilter(new FilterPredicate("votants", FilterOperator.EQUAL, votant));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -102,9 +118,14 @@ public class PetitionEndpoint {
 		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
 		return result;
 	}
-	
-	@ApiMethod(name = "petitionsTag", httpMethod = HttpMethod.GET)
-	public List<Entity> petitionsTag(@Named("tags") String tag) {
+
+    /**
+	 * Return the petitions signed by a user
+	 * @param tag
+	 * @return
+	 */
+	@ApiMethod(name = "getPetitionsWithTag", path = "petitions/tagged/{tag}", httpMethod = ApiMethod.HttpMethod.GET)
+	public List<Entity> getPetitionsWithTag(@Named("tags") String tag) throws Exception{
 		Query q = new Query("Petition").setFilter(new FilterPredicate("tags", FilterOperator.EQUAL, tag));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
