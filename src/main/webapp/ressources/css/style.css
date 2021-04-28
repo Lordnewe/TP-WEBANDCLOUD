@@ -1,0 +1,13 @@
+.fas, .fa {
+    vertical-align: middle;
+}
+
+.columns-entity > div{
+    width: 50%;
+}
+
+@media only screen and (max-width: 768px) {
+    .columns-entity > div {
+        width: 100%;
+    }
+}

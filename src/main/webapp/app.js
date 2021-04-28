@@ -39,11 +39,6 @@ m.route(document.body, "/", {
         onmatch: function () {
             return MyApp.Login;
         }
-    },
-    "/admin": {
-        onmatch: function () {
-            return MyApp.Admin;
-        }
     }
 });
 
@@ -139,24 +134,36 @@ var MyApp = {
 
 MyApp.Navbar = {
     view: function () {
-        return m("nav", {class: "navbar is-fixed-top is-primary"}, [
+        return m("nav", {class: "navbar is-link"}, [
             m("div", {class: "navbar-brand"}, [
                 m(m.route.Link, {href: "/", class: "navbar-item"}, [
-					m("p","TinyPet")
+                    m("i", {class: "fas fa-home"}),
+					m("p"," TinyPet")
 				])
             ]),
             m("div", {class:"navbar-menu"}, [
-                m("div", {class:"navbar-start"}, [
-                    
-                ]),
+                /* m("div", {class:"navbar-start"}, [
+                    m(m.route.Link, {href: "/newPet", class: "navbar-item"}, [
+                        m("i", {class: "fas fa-vote-yea"}),
+                        m("p"," Poster une nouvelle pétition")
+                    ])
+                ]), */
                 m("div", {class:"navbar-end"}, [
                     m("div", {class:"navbar-item"}, [
-                        m("p","Nom de l'utilisateur connecté")
+                        MyApp.Profile.userData.name
+                    ]),
+                    m(m.route.Link, {href: "/profile", class: "navbar-item"}, [
+                        m("figure", {class: "image is-32x32"}, [
+                            m("img", {
+                                class: "is-rounded",
+                                "src": MyApp.Profile.userData.url
+                            })
+                        ])
                     ]),
                     m("div", {class:"navbar-item"}, [
                         m("div", {class:"buttons"}, [
                             m("span", {class: "g-signin2", id:"signin-button"}, [
-                                m("p","Se connecter")
+                                //m("p","Se connecter")
                             ])
                         ])
                     ])
@@ -528,12 +535,12 @@ MyApp.Homepage = {
             return m("div", [
                 m(MyApp.Navbar),
                 m("div.container", [
-                    m("h1.title","This is your timeline"),
+                    m("h1.title","Top 10 des pétitions"),
                     m("button.btn.mb-5", {
                         onclick: function () {
                             MyApp.Homepage.getTopTen();
                         }
-                    }, "Refresh"),
+                    }, "Rafraîchir"),
                         MyApp.Homepage.loading_gif?
                             m("div",
                                 m("img", {
@@ -545,71 +552,55 @@ MyApp.Homepage = {
                             :
                             MyApp.Homepage.pets.length==0?
                                 m("div",
-                                    m("span", "No new post to show")
+                                    m("span", "Pas de pétitions à afficher...")
                                 ):
-                                m('table', {
-                                    class:'table is-striped',"table":"is-striped"
+                                m('div', {
+                                    class:'columns-entity columns is-mobile is-multiline is-centered'
                                 },[
-                                    m('tr', [
-                                        m('th', {
-                                            "style":"width:20vw"
-                                        }, ""),
-                                        m('th', {
-                                            "style":"width:40vw"
-                                        }, "Post"),
-                                        m('th', {
-                                            "style":"width:25vw"
-                                        }, "Caption"),
-                                        m('th', {
-                                            "style":"width:5vw"
-                                        }, "Votes"),
-                                        m('th', {
-                                            "style":"width:10vw"
-                                        }),
-                                    ]),
                                     MyApp.Homepage.pets.map(function(pet) {
-                                        return m("tr", [
-                                            m('td', {
-                                                "style":"width:20vw",
+                                        return m("div", {class:"column is-narrow"}, [
+                                            m('div', {
+                                                class: "card",
                                                 onclick: function () {
                                                     MyApp.Homepage.goToUser(pet.owner);
                                                 }
                                             }, [
-                                                /*m("h1", post.tinyUser.name),*/
-                                                m("h2", pet.owner),
-                                                /*m('img', {
-                                                    class:"profile_image",
-                                                    'src': post.tinyUser.url
-                                                })*/
-                                            ]),
-                                            m('td', {
-                                                "style":"width:40vw"
-                                            }, m('img', {
-                                                    'src': pet.url
-                                                })
-                                            ),
-                                            m('td', {
-                                                "style":"width:25vw"
-                                            }, m('label', pet.body)
-                                            ),
-                                            m('td', {
-                                                "style":"width:5vw"
-                                            },
-                                                m('label',
-                                                    pet.nbVotants
-                                                )
-                                            ),
-                                            m("td", {
-                                                "style":"width:10vw"
-                                            },
-                                                    m("button", {
-                                                        "class":"btn btn-success",
+                                                m("div", {class:"card-content"}, [
+                                                    m("div", {class:"media"}, [
+                                                        m("div", {class:"media-left"}, [
+                                                            m("i", {class:"fas fa-vote-yea"})
+                                                        ]),
+                                                        m("div", {class:"media-content"}, [
+                                                            m("p", {class:"title is-4"}, [
+                                                                pet.title
+                                                            ]),
+                                                            m("p", {class:"subtitle is-6"}, [
+                                                                pet.body
+                                                            ]),
+                                                            m("p", {class:"subtitle is-6 is-italic"}, [
+                                                                pet.tags
+                                                            ])
+                                                        ])
+                                                    ]),
+                                                    m("div", {class:"content"}, [
+                                                        m("div", {class:"has-text-grey"}, [
+                                                            "Publié par "+pet.owner+" le "+pet.date
+                                                        ])
+                                                    ])
+                                                ]),
+                                                m("div", {class:"card-footer"}, [
+                                                    m("div", {class:"card-footer-item"}, [
+                                                        "Votants : "+pet.nbVotants+"/"+pet.goal
+                                                    ]),
+                                                    m("a", {
+                                                        href: "#",
+                                                        class: "card-footer-item",
                                                         onclick: function () {
                                                             MyApp.Homepage.signPet(pet.key.name);
-                                                        },
-                                                },
-                                                "Sign")
-                                            )
+                                                        }
+                                                    },"Signer")
+                                                ])
+                                            ])
                                         ]);
                                     })
                                 ]),
@@ -640,9 +631,12 @@ MyApp.Homepage = {
                 response.items.forEach( function (pet) {
                     MyApp.Homepage.pets[i] = {
                         "key":pet.key,
+                        "title":pet.properties.title,
                         "owner":pet.properties.owner,
                         "date":pet.properties.date,
                         "body":pet.properties.body,
+                        "goal":pet.properties.goal,
+                        "tags":pet.properties.tags,
                         "nbVotants":pet.properties.nbVotants
                     };
                     i++;
@@ -668,9 +662,12 @@ MyApp.Homepage = {
                 response.items.forEach( function (post) {
                     MyApp.Homepage.pets[i] = {
                         "key":pet.key,
+                        "title":pet.properties.title,
                         "owner":pet.properties.owner,
                         "date":pet.properties.date,
                         "body":pet.properties.body,
+                        "goal":pet.properties.goal,
+                        "tags":pet.properties.tags,
                         "nbVotants":pet.properties.nbVotants
                     };
                     i++;
@@ -731,7 +728,7 @@ MyApp.NotSignedIn = {
                     m("div", {
                         class:"title col-md-12 col-sm-12 col-xs-12"
                     },
-                        m("h1", "Join us on Tinygram to see your friends' posts !"))
+                        m("h1", "Bienvenue sur TinyPet ! Le paradis des pétitions !"))
                 ),
                 m("div.row.mt-1", [
                     m("div", {
@@ -830,81 +827,93 @@ MyApp.Profile = {
                             class: 'subtitle'
                         }, MyApp.Profile.userData.email)
                     ),
-                    m("div", {class:"col-md-3 col-sm-3 col-xs-3"},
-                        m("h2.subtitle", MyApp.Profile.userData.followers_count +" abonné(es)")
-                    ),
                     m('div', {class:"col-md-2 col-sm-2 col-xs-2"},
                         m("button", {
                             class:"btn btn-info float-right",
                             onclick: function () {
                                 MyApp.Profile.getPets();
                             },
-                        },"Load Messages")
+                        },"Rafraîchir")
                     )]
                 ),
-                m("p",{class: 'my-5'}, [
-                    m("button.btn.btn-success[aria-controls='collapseNewPost'][aria-expanded='false'][data-target='#collapseNewPost'][data-toggle='collapse'][type='button']", "Make a new Post"),
-                ]),
-                m(".collapse[id='collapseNewPost'].mb-5", [
-                    m("form", {
-                        onsubmit: function(e) {
-                            e.preventDefault();
-                            var post_url = "";
-                            var post_body = "";
-                            if ($("#new_post_url").val()=="") post_url="https://dummyimage.com/320x200/000/fff&text="+Date.now();
-                            else post_url = $("#new_post_url").val();
-                            if ($("#new_post_body").val()=="") post_body="bla bla bla \n"+Date.now();
-                            else post_body = $("#new_post_body").val();
-                            MyApp.Profile.newPost(post_url,post_body,false);
-                        }},
-                        [
-                            m('div', {
-                                class:'field'
-                            },[
-                                m("label", {
-                                    class:'label',
-                                },"URL"),
-                                m('div',{class:'control'},
-                                    m("input[type=text]", {
-                                        class:'input is-rounded',
-                                        placeholder:"Your url",
-                                        id:"new_post_url"
-                                    })
-                                ),
-                            ]),
-                            m('div',{class:'field'},[
-                                m("label", {class: 'label'},"Body"),
-                                m('div',{class:'control'},
-                                    m("input[type=textarea]", {
-                                        class:'textarea',
-                                        placeholder:"your text",
-                                        id:"new_post_body"
-                                    })
-                                ),
-                            ]),
-                            m('div',{class:'control mt-3'},
-                                m("button[type=submit]", {
-                                    class:'float-right btn btn-success'
-                                },"Post")
+                m("form", {
+                    onsubmit: function(e) {
+                        e.preventDefault();
+                        var pet_goal = "";
+                        var pet_body = "";
+                        var pet_tags = "";
+                        var pet_title = "";
+                        pet_title = $("#new_pet_title").val();
+                        pet_goal = $("#new_pet_goal").val();
+                        pet_body = $("#new_pet_body").val();
+                        pet_tags = $("#new_pet_tags").val();
+                        MyApp.Profile.newPet(pet_goal,pet_title,pet_tags,pet_body);
+                    }},
+                    [
+                        m('div', {
+                            class:'field'
+                        },[
+                            m("label", {
+                                class:'label',
+                            },"Titre"),
+                            m('div',{class:'control'},
+                                m("input[type=text]", {
+                                    class:'input',
+                                    placeholder:"Le titre de votre pétition",
+                                    id:"new_pet_title"
+                                })
                             ),
-                        ]
-                    ),
-                    m("br.mt-3"),
-                    m("button.mt-3", {
-                        class:"btn btn-info float-right",
-                        onclick: function () {
-                            MyApp.Profile.newPost();
-                        },
-                    },"Post Random Message"),
-                ]),
-                m("div",m(MyApp.PostView,{profile: MyApp.Profile, owned: true}))
-            ])
+                        ]),
+                        m('div',{class:'field'},[
+                            m("label", {class: 'label'},"Description"),
+                            m('div',{class:'control'},
+                                m("input[type=textarea]", {
+                                    class:'textarea',
+                                    placeholder:"Décrivez votre pétition",
+                                    id:"new_pet_body"
+                                })
+                            ),
+                        ]),
+                        m('div',{class:'field'},[
+                            m("label", {class: 'label'},"But"),
+                            m('div',{class:'control'},
+                                m("input[type=number]", {
+                                    class:'input',
+                                    placeholder:"Le but visé en termes de votes",
+                                    id:"new_pet_goal"
+                                })
+                            ),
+                        ]),
+                        m('div', {
+                            class:'field'
+                        },[
+                            m("label", {
+                                class:'label',
+                            },"Hashtags"),
+                            m('div',{class:'control'},
+                                m("input[type=text]", {
+                                    class:'input',
+                                    placeholder:"Les différents tags séparés par des virgules (exemple : #cat,#food,#government)",
+                                    id:"new_pet_tags"
+                                })
+                            ),
+                        ]),
+                        m('div',{class:'control mt-3'},
+                            m("button[type=submit]", {
+                                class:'float-right btn btn-success'
+                            },"Poster la pétition")
+                        ),
+                    ]
+                ),
+                m("br.mt-3"),
+            ]),
+            m("div",m(MyApp.PostView,{profile: MyApp.Profile, owned: true}))
         ]);
     },
     getPets: function() {
         return m.request({
             method: "GET",
-            url: "_ah/api/post_api/1.0/getPost",
+            url: "_ah/api/myApi/v1/petitions/created",
             params : {
                 'email':MyApp.Profile.userData.email,
                 'access_token': encodeURIComponent(MyApp.Profile.userData.id)
@@ -941,24 +950,19 @@ MyApp.Profile = {
             }
         });
     },
-    newPost: function(url, body, random=true) {
+    newPet: function(goal, title, tags, body) {
         var data= {};
-        if(random) {
-            data= {
-                'url': "https://dummyimage.com/320x200/000/fff&text="+Date.now(),
-                'body': "bla bla bla",
-                'access_token': encodeURIComponent(MyApp.Profile.userData.id)
+        var arrayTags = tags.split(',');
+        data= {
+            'body': body,
+            'goal': goal,
+            'title': title,
+            'tags': arrayTags,
+            'access_token': encodeURIComponent(MyApp.Profile.userData.id)
         };
-        } else {
-            data= {
-                'url': url,
-                'body': body,
-                'access_token': encodeURIComponent(MyApp.Profile.userData.id)
-            };
-        }
         return m.request({
             method: "POST",
-            url: "_ah/api/post_api/1.0/newPost",
+            url: "_ah/api/myApi/v1/petition/create",
             params: data,
         })
         .then(function(response) {
@@ -1053,17 +1057,6 @@ MyApp.PostView = {
                                 m("td", {
                                     "style":"width:10vw"
                                 },
-                                        m("button", {
-                                            "class":"btn btn-success",
-                                            onclick: function () {
-                                                MyApp.PostView.signPet(item.key.name);
-                                            },
-                                    },
-                                    "Like your own post (weird)")
-                                ),
-                                m("td", {
-                                    "style":"width:10vw"
-                                },
                                     m("button", {
                                         "class":"btn btn-danger",
                                         onclick: function() {
@@ -1071,7 +1064,7 @@ MyApp.PostView = {
                                         },
 
                                         },
-                                    "Delete this post")
+                                    "Supprimer cette pétition")
                                 )
                             ]);
                         } else {
@@ -1159,38 +1152,5 @@ MyApp.Login = {
                 m("h2", 'If no sign in button appears on the top left of the screen, please refresh the page.'),
             ])
         ]);
-    }
-};
-
-MyApp.Admin = {
-    view: function() {
-        return m('div',[
-            m(MyApp.Navbar),
-            m('div.container',[
-                m("button.btn.btn-success", {
-                    onclick : function () {
-                        MyApp.Profile.userData.firstName = MyApp.Admin.makeRandomName("firstName");
-                        MyApp.Profile.userData.lastName = MyApp.Admin.makeRandomName("lastName");
-                        MyApp.Profile.userData.name = MyApp.Profile.userData.firstName+" "+MyApp.Profile.userData.lastName;
-                        MyApp.Profile.userData.email = MyApp.Profile.userData.firstName+"."+MyApp.Profile.userData.lastName+"@gmail.com";
-                        MyApp.Profile.userData.url = "https://dummyimage.com/320x200/000/fff&text="+Date.now();
-
-                        console.log(MyApp.Profile.userData);
-
-                        MyApp.Profile.createUser();
-                    }
-                }, "Add random user")
-            ])
-        ]);
-    },
-    makeRandomName: function (type) {
-        var firstNameArray = ["Adam", "Alex", "Aaron", "Ben", "Carl", "Dan", "David", "Edward", "Fred", "Frank", "George", "Hal", "Hank", "Ike", "John", "Jack", "Joe", "Larry", "Monte", "Matthew", "Mark", "Nathan", "Otto", "Paul", "Peter", "Roger", "Roger", "Steve", "Thomas", "Tim", "Ty", "Victor", "Walter"];
-        var lastNameArray = ["Anderson", "Ashwoon", "Aikin", "Bateman", "Bongard", "Bowers", "Boyd", "Cannon", "Cast", "Deitz", "Dewalt", "Ebner", "Frick", "Hancock", "Haworth", "Hesch", "Hoffman", "Kassing", "Knutson", "Lawless", "Lawicki", "Mccord", "McCormack", "Miller", "Myers", "Nugent", "Ortiz", "Orwig", "Ory", "Paiser", "Pak", "Pettigrew", "Quinn", "Quizoz", "Ramachandran", "Resnick", "Sagar", "Schickowski", "Schiebel", "Sellon", "Severson", "Shaffer", "Solberg", "Soloman", "Sonderling", "Soukup", "Soulis", "Stahl", "Sweeney", "Tandy", "Trebil", "Trusela", "Trussel", "Turco", "Uddin", "Uflan", "Ulrich", "Upson", "Vader", "Vail", "Valente", "Van Zandt", "Vanderpoel", "Ventotla", "Vogal", "Wagle", "Wagner", "Wakefield", "Weinstein", "Weiss", "Woo", "Yang", "Yates", "Yocum", "Zeaser", "Zeller", "Ziegler", "Bauer", "Baxster", "Casal", "Cataldi", "Caswell", "Celedon", "Chambers", "Chapman", "Christensen", "Darnell", "Davidson", "Davis", "DeLorenzo", "Dinkins", "Doran", "Dugelman", "Dugan", "Duffman", "Eastman", "Ferro", "Ferry", "Fletcher", "Fietzer", "Hylan", "Hydinger", "Illingsworth", "Ingram", "Irwin", "Jagtap", "Jenson", "Johnson", "Johnsen", "Jones", "Jurgenson", "Kalleg", "Kaskel", "Keller", "Leisinger", "LePage", "Lewis", "Linde", "Lulloff", "Maki", "Martin", "McGinnis", "Mills", "Moody", "Moore", "Napier", "Nelson", "Norquist", "Nuttle", "Olson", "Ostrander", "Reamer", "Reardon", "Reyes", "Rice", "Ripka", "Roberts", "Rogers", "Root", "Sandstrom", "Sawyer", "Schlicht", "Schmitt", "Schwager", "Schutz", "Schuster", "Tapia", "Thompson", "Tiernan", "Tisler" ];
-
-        if (type=="firstName") {
-            return firstNameArray[Math.floor(Math.random()*firstNameArray.length)];
-        } else {
-            return lastNameArray[Math.floor(Math.random()*firstNameArray.length)];
-        }
     }
 };
