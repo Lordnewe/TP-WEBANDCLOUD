@@ -71,4 +71,28 @@ public class UserEndpoint {
 		}
 		return searchQueryResult;
 	}
+
+	/**
+	 * Get user infos
+	 * @param user
+	 * @param email
+	 * @return
+	 */
+    @ApiMethod(name = "getUser", path="user/getInfos", httpMethod = HttpMethod.GET)
+	public Entity getUser(User user, @Named("email") String email)
+        throws UnauthorizedException {
+
+        if (user == null) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        Query userQuery = new Query("User").setFilter(
+				new FilterPredicate("email", FilterOperator.EQUAL, email)
+				);
+        PreparedQuery preparedUserQuery = datastore.prepare(userQuery);
+        Entity petUser = preparedUserQuery.asSingleEntity();
+
+        return petUser;
+    }
 }

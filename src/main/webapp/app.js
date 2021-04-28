@@ -6,12 +6,6 @@ m.route(document.body, "/", {
             return MyApp.Homepage;
         }
     },
-    "/home" : {
-        onmatch: function() {
-            if (!auth2.isSignedIn.get()) return MyApp.NotSignedIn;
-            else return MyApp.Homepage;
-        }
-    },
     "/profile": {
         onmatch: function() {
             if (!auth2.isSignedIn.get()) m.route.set("/login");
@@ -24,7 +18,7 @@ m.route(document.body, "/", {
     },
     "/search": {
         onmatch : function () {
-            return MyApp.SearchedUsersList;
+            return MyApp.SearchedPetList;
         }
     },
     "/user": {
@@ -48,7 +42,7 @@ var showHomepage = false;
 
 var isLoggedIn = false;
 var auth2;
-var googleUser; // The current user
+var googleUser;
 
 
 gapi.load('auth2', function() {
@@ -58,7 +52,7 @@ gapi.load('auth2', function() {
     auth2.attachClickHandler('signin-button', {}, onSuccess, onFailure);
 
     auth2.isSignedIn.listen(signinChanged);
-    auth2.currentUser.listen(userChanged); // This is what you use to listen for user changes
+    auth2.currentUser.listen(userChanged);
 });
 
 var signinChanged = function (loggedIn) {
@@ -101,7 +95,7 @@ var onSuccess = function(user) {
     MyApp.Profile.createUser();
     MyApp.Homepage.getTopTen();
 
-    m.route.set("/home");
+    m.route.set("/");
 };
 
 var onFailure = function(error) {
@@ -120,6 +114,10 @@ var userChanged = function (user) {
       // Do something here
     }
 };
+
+$(window).on('load', function() {
+    MyApp.Homepage.getTopTen();
+});
 
 var MyApp = {
     view: function (ctrl) {
@@ -171,7 +169,6 @@ MyApp.Navbar = {
             ]),
         ])
     },
-
 };
 
 MyApp.signInButton = {
@@ -192,17 +189,16 @@ MyApp.Searchbar = {
                     m("form.form-inline.my-2.my-lg-0[action='/search'][method='post']", {
                         id:"searchForm"
                     }, [
-                        m("input.form-control.mr-sm-2[aria-label='Search'][id='search'][name='search'][placeholder='Search users'][type='search']"),
+                        m("input.form-control.mr-sm-2[aria-label='Search'][id='search'][name='search'][placeholder='Search tags'][type='search']"),
                         m("input[id='me'][name='me'][type='hidden'][value=" + MyApp.Profile.userData.email + "]"),
                         m("button.btn.btn-outline-success.my-2.my-sm-0.mr-2[type='submit']",{
                             onclick: function (e) {
                                 e.preventDefault();
-                                MyApp.Searchbar.searchUser();
+                                MyApp.Searchbar.searchPetByTag();
                             }
                         } , "Search"),
                     ])
-                ),
-                m(MyApp.profilePicAndSignOut)
+                )
             ]);
         } else {
             return (
@@ -213,7 +209,7 @@ MyApp.Searchbar = {
             );
         }
     },
-    searchUser: function () {
+    searchPetByTag: function () {
         m.request({
             method: "GET",
             params: {
@@ -221,25 +217,18 @@ MyApp.Searchbar = {
                 'search':$("#search").val(),
                 'access_token': encodeURIComponent(MyApp.Profile.userData.id)
             },
-            url: "_ah/api/user_api/1.0/getSearchUser"
+            url: "_ah/api/myApi/v1/petitions/searchByTag"
         })
         .then(function(response) {
             console.log("users:",response);
             var i = 0;
-            var tinyUser = {};
+            var pet = {};
             if(response.items === undefined) {
-                MyApp.SearchedUsersList.tinyUserList= [];
-
+                MyApp.SearchedPetList.petList= [];
             } else {
                 response.items.forEach(function (item) {
-                    var friend = false;
-                    item.properties.followers.forEach(function (follower) {
-                        if (follower == MyApp.Profile.userData.email) {
-                            friend = true;
-                        }
-                    });
-                    tinyUser=item.properties;
-                    MyApp.SearchedUsersList.tinyUserList[i] = {
+                    pet=item.properties;
+                    MyApp.SearchedPetList.petList[i] = {
                         email:tinyUser.email,
                         name:tinyUser.name,
                         invertedName:tinyUser.invertedName,
@@ -250,7 +239,7 @@ MyApp.Searchbar = {
                     };
                     i++;
                 });
-                console.log(MyApp.SearchedUsersList.tinyUserList);
+                console.log(MyApp.SearchedPetList.petList);
             }
             m.route.set("/search");
         });
@@ -283,61 +272,48 @@ MyApp.profilePicAndSignOut = {
     }
 };
 
-MyApp.SearchedUsersList = {
-    tinyUserList: [],
+MyApp.SearchedPetList = {
+    petList: [],
     view: function (vnode) {
         return (
             m("div",
                 m(MyApp.Navbar),
-                MyApp.SearchedUsersList.tinyUserList.length != 0 ?
+                MyApp.SearchedPetList.petList.length != 0 ?
                     m("div.container", [
                         m('table', {
                             class:'table is-striped',
                             "table":"is-striped"
                         },[
-                            MyApp.SearchedUsersList.tinyUserList.map(function(tinyUser) {
+                            MyApp.SearchedPetList.petList.map(function(pet) {
                                 return m("tr", {
                                     "style":"height:9vh"
                                 }, [
                                     m('td', {
                                         "style":"width:10vw",
                                         onclick: function () {
-                                            MyApp.SearchedUsersList.goToUser(tinyUser.email);
+                                            MyApp.SearchedPetList.goToUser(pet.owner);
                                         }
-                                    },  m('img',
-                                        {
-                                            "style":"height:8vh",
-                                            class:"profile_image",
-                                            'src': tinyUser.url,
-                                            'alt':tinyUser.name,
-                                        })
+                                    }
                                     ),
                                     m('td.inline', {
                                         "style":"width:80vw",
                                         onclick: function () {
-                                            MyApp.SearchedUsersList.goToUser(tinyUser.email);
+                                            MyApp.SearchedTagsList.goToUser(pet.owner);
                                         }
                                     }, [
-                                        m('h1', tinyUser.name),
-                                        m('span', "("+tinyUser.email+")"),
+                                        m('h1', pet.title),
+                                        m('span', "("+pet.owner+")"),
                                     ]),
                                     m('td', {
                                         "style":"width:12vw"
-                                    }, m('button.btn.float-right', {
-                                        class:tinyUser.friend?"btn-danger":"btn-success",
-                                        id: "btn_follow",
-                                        onclick: function () {
-                                            MyApp.SearchedUsersList.followUser(tinyUser);
-                                        }
-                                    }, tinyUser.friend?"Followed":"Follow")
-                                    )
+                                    })
                                 ]);
                             })
                         ])
                     ])
                     :
                     m("div.container",
-                        m("h1.title", "No user found for your search...")
+                        m("h1.title", "Pas de pétition trouvée")
                     )
             )
         );
@@ -348,60 +324,24 @@ MyApp.SearchedUsersList = {
             params: {
                 'email': email,
             },
-            url: "_ah/api/user_api/1.0/getUser"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),
+            url: "_ah/api/myApi/v1/user/getInfos"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),
         })
         .then(function (response) {
-            var tinyUser = response.properties;
-            var friend = false;
-            var followers_count = -1;
-
-            tinyUser.followers.forEach(function (follower) {
-                followers_count++;
-                if (follower == MyApp.Profile.userData.email) {
-                    friend = true;
-                }
-            });
+            var user = response.properties;
 
             MyApp.User.userData = {
-                email:tinyUser.email,
-                name:tinyUser.name,
-                invertedName:tinyUser.invertedName,
-                firstName:tinyUser.firstName,
-                lastName:tinyUser.lastName,
-                url:tinyUser.url,
-                friend: friend,
-                followers_count: followers_count,
+                email:user.email,
+                name:user.name,
+                invertedName:user.invertedName,
+                firstName:user.firstName,
+                lastName:user.lastName,
+                url:user.url,
                 nextToken:"",
                 pets:[],
             };
             MyApp.User.getPets();
             m.route.set("/user");
         });
-    },
-    followUser: function (tinyUser) {
-        var data = {
-            'askingUser': MyApp.Profile.userData.email,
-            'targetUser': tinyUser.email,
-        };
-        if (!tinyUser.friend) {
-            return m.request ({
-                method: "POST",
-                url: "_ah/api/user_api/1.0/followUser"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),                                                    params: data,
-            }).then(function () {
-                tinyUser.friend = true;
-                document.getElementById("btn_follow").class = "btn-danger";
-                console.log("Followed");
-            });
-        } else {
-            return m.request ({
-                method: "POST",
-                url: "_ah/api/user_api/1.0/unfollowUser"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),                                                    params: data,
-            }).then(function () {
-                tinyUser.friend = false;
-                document.getElementById("btn_follow").class = "btn-success";
-                console.log("Unfollowed");
-            });
-        }
     }
 };
 
@@ -428,30 +368,9 @@ MyApp.User = {
                             m("h2", {
                                 class: 'subtitle'
                             }, MyApp.User.userData.email)
-                        ),
-                        m("div", {class:"col-md-3 col-sm-3 col-xs-3"},
-                            m("h2.subtitle", MyApp.User.userData.followers_count +" abonné(es)")
-                        ),
-                        MyApp.Profile.userData.email != MyApp.User.userData.email?
-                            m('div', {class:"col-md-4 col-sm-4 col-xs-4"},
-                                m("button.btn.float-right", {
-                                    class: MyApp.User.userData.friend?"btn-danger":"btn-success",
-                                    onclick: function () {
-                                        MyApp.User.followUser();
-                                    }
-                                }, MyApp.User.userData.friend?"Unfollow":"Follow")
-                            ):
-                            m('div', {class:"col-md-4 col-sm-4 col-xs-4"},
-                                m("span.btn.float-left", {
-                                    class:"btn-outline-info",
-                                    style:"cursor:inherit",
-                                    onclick: function () {
-                                        m.route.set("/profile");
-                                    }
-                                }, "This is your public profile (click to access to your profile)")
-                            )]
+                        )]
                     ),
-                    m("div",m(MyApp.PostView,{profile: MyApp.User, owned:false}))
+                    m("div",m(MyApp.PetsTable,{profile: MyApp.User, owned:false}))
                 ]),
             ])
         );
@@ -459,7 +378,7 @@ MyApp.User = {
     getPets: function() {
         return m.request({
             method: "GET",
-            url: "_ah/api/post_api/1.0/getPost",
+            url: "_ah/api/myApi/v1/petitions/created",
             params: {
                 'email':MyApp.User.userData.email,
                 'access_token':encodeURIComponent(MyApp.Profile.userData.id)
@@ -479,7 +398,7 @@ MyApp.User = {
         console.log(MyApp.Profile.userData.nextToken);
         return m.request({
             method: "GET",
-            url: "_ah/api/post_api/1.0/getPost",
+            url: "_ah/api/myApi/v1/petitions/created",
             params: {
                 'email':MyApp.User.userData.email,
                 'next':MyApp.User.userData.nextToken,
@@ -496,33 +415,6 @@ MyApp.User = {
                 MyApp.User.userData.nextToken="";
             }
         });
-    },
-    followUser: function () {
-        var data = {
-            'askingUser': MyApp.Profile.userData.email,
-            'targetUser': MyApp.User.userData.email,
-        };
-        if (!MyApp.User.userData.friend) {
-            return m.request ({
-                method: "POST",
-                url: "_ah/api/user_api/1.0/followUser"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),                                                params: data,
-            }).then(function () {
-                MyApp.User.userData.friend = true;
-                MyApp.User.userData.followers_count++;
-                m.redraw();
-                console.log("Followed");
-            });
-        } else {
-            return m.request ({
-                method: "POST",
-                url: "_ah/api/user_api/1.0/unfollowUser"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),                                                params: data,
-            }).then(function () {
-                MyApp.User.userData.friend = false;
-                MyApp.User.userData.followers_count--;
-                m.redraw();
-                console.log("Unfollowed");
-            });
-        }
     }
 };
 
@@ -530,90 +422,85 @@ MyApp.Homepage = {
     pets: [],
     loading_gif: false,
     view: function () {
-        if (MyApp.Profile.userData.id == "") return m(MyApp.NotSignedIn);
-        else {
-            return m("div", [
-                m(MyApp.Navbar),
-                m("div.container", [
-                    m("h1.title","Top 10 des pétitions"),
-                    m("button.btn.mb-5", {
-                        onclick: function () {
-                            MyApp.Homepage.getTopTen();
-                        }
-                    }, "Rafraîchir"),
-                        MyApp.Homepage.loading_gif?
+        return m("div", [
+            m(MyApp.Navbar),
+            m("div.container", [
+                m("h1.title","Top 10 des pétitions"),
+                m("button.btn.mb-5", {
+                    onclick: function () {
+                        MyApp.Homepage.getTopTen();
+                    }
+                }, "Rafraîchir"),
+                    MyApp.Homepage.loading_gif?
+                        m("div",
+                            m("img", {
+                                "style":"text-center",
+                                "src":"static/images/loading.gif",
+                                "alt":"Loading..."
+                            })
+                        )
+                        :
+                        MyApp.Homepage.pets.length==0?
                             m("div",
-                                m("img", {
-                                    "style":"text-center",
-                                    "src":"static/images/loading.gif",
-                                    "alt":"Loading..."
-                                })
-                            )
-                            :
-                            MyApp.Homepage.pets.length==0?
-                                m("div",
-                                    m("span", "Pas de pétitions à afficher...")
-                                ):
-                                m('div', {
-                                    class:'columns-entity columns is-mobile is-multiline is-centered'
-                                },[
-                                    MyApp.Homepage.pets.map(function(pet) {
-                                        return m("div", {class:"column is-narrow"}, [
-                                            m('div', {
-                                                class: "card",
-                                                onclick: function () {
-                                                    MyApp.Homepage.goToUser(pet.owner);
-                                                }
-                                            }, [
-                                                m("div", {class:"card-content"}, [
-                                                    m("div", {class:"media"}, [
-                                                        m("div", {class:"media-left"}, [
-                                                            m("i", {class:"fas fa-vote-yea"})
-                                                        ]),
-                                                        m("div", {class:"media-content"}, [
-                                                            m("p", {class:"title is-4"}, [
-                                                                pet.title
-                                                            ]),
-                                                            m("p", {class:"subtitle is-6"}, [
-                                                                pet.body
-                                                            ]),
-                                                            m("p", {class:"subtitle is-6 is-italic"}, [
-                                                                pet.tags
-                                                            ])
-                                                        ])
+                                m("span", "Pas de pétitions à afficher...")
+                            ):
+                            m('div', {
+                                class:'columns-entity columns is-mobile is-multiline is-centered'
+                            },[
+                                MyApp.Homepage.pets.map(function(pet) {
+                                    return m("div", {class:"column is-narrow"}, [
+                                        m('div', {
+                                            class: "card"
+                                        }, [
+                                            m("div", {class:"card-content"}, [
+                                                m("div", {class:"media"}, [
+                                                    m("div", {class:"media-left"}, [
+                                                        m("i", {class:"fas fa-vote-yea"})
                                                     ]),
-                                                    m("div", {class:"content"}, [
-                                                        m("div", {class:"has-text-grey"}, [
-                                                            "Publié par "+pet.owner+" le "+pet.date
+                                                    m("div", {class:"media-content"}, [
+                                                        m("p", {class:"title is-4"}, [
+                                                            pet.title
+                                                        ]),
+                                                        m("p", {class:"subtitle is-6"}, [
+                                                            pet.body
+                                                        ]),
+                                                        m("p", {class:"subtitle is-6 is-italic"}, [
+                                                            pet.tags
                                                         ])
                                                     ])
                                                 ]),
-                                                m("div", {class:"card-footer"}, [
-                                                    m("div", {class:"card-footer-item"}, [
-                                                        "Votants : "+pet.nbVotants+"/"+pet.goal
-                                                    ]),
-                                                    m("a", {
-                                                        href: "#",
-                                                        class: "card-footer-item",
-                                                        onclick: function () {
-                                                            MyApp.Homepage.signPet(pet.key.name);
-                                                        }
-                                                    },"Signer")
+                                                m("div", {class:"content"}, [
+                                                    m("div", {class:"has-text-grey"}, [
+                                                        "Publié par ",
+                                                        m("a", {
+                                                            href: "#",
+                                                            onclick: function () {
+                                                                MyApp.Homepage.goToUser(pet.owner);
+                                                            }
+                                                        },pet.owner),
+                                                        " le "+pet.date
+                                                    ])
                                                 ])
+                                            ]),
+                                            m("div", {class:"card-footer"}, [
+                                                m("div", {class:"card-footer-item"}, [
+                                                    "Votants : "+pet.nbVotants+"/"+pet.goal
+                                                ]),
+                                                m("a", {
+                                                    href: "#",
+                                                    class: "card-footer-item",
+                                                    onclick: function () {
+                                                        MyApp.Homepage.signPet(pet.key.name);
+                                                    }
+                                                },"Signer")
                                             ])
-                                        ]);
-                                    })
-                                ]),
-                                m('button',{
-                                    class: 'btn btn-info float-right mt-3',
-                                    onclick: function(e) {
-                                        MyApp.Homepage.getNextPets();
-                                    }
-                                }, "Next"),
+                                        ])
+                                    ]);
+                                })
+                            ]),
 
-                ])
-            ]);
-        }
+            ])
+        ]);
     },
     getTopTen : function () {
         MyApp.Homepage.loading_gif = true;
@@ -644,42 +531,6 @@ MyApp.Homepage = {
             }
         });
     },
-    getNextPets: function() {
-        console.log(MyApp.Profile.userData.nextToken);
-        return m.request({
-            method: "GET",
-            url: "_ah/api/post_api/1.0/getTimeline",
-            params: {
-                'next':MyApp.Profile.userData.nextToken,
-                'access_token': encodeURIComponent(MyApp.Profile.userData.id)
-            }
-        })
-        .then(function(response) {
-            showTopten = true;
-            MyApp.Homepage.loading_gif = false;
-            var i = 0;
-            if (response.items != undefined) {
-                response.items.forEach( function (post) {
-                    MyApp.Homepage.pets[i] = {
-                        "key":pet.key,
-                        "title":pet.properties.title,
-                        "owner":pet.properties.owner,
-                        "date":pet.properties.date,
-                        "body":pet.properties.body,
-                        "goal":pet.properties.goal,
-                        "tags":pet.properties.tags,
-                        "nbVotants":pet.properties.nbVotants
-                    };
-                    i++;
-                });
-                if ('nextPageToken' in response) {
-                    MyApp.Profile.userData.nextToken = response.nextPageToken;
-                } else {
-                    MyApp.Profile.nextToken="";
-                }
-            }
-        });
-    },
     signPet: function (signedPet) {
 	    var data = {
             'signedPet': signedPet,
@@ -701,97 +552,22 @@ MyApp.Homepage = {
             params: {
                 'email': email,
             },
-            url: "_ah/api/user_api/1.0/getUser"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),        })
+            url: "_ah/api/myApi/v1/user/getInfos"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),        })
         .then(function (response) {
-            var tinyUser = response.properties;
+            var user = response.properties;
             MyApp.User.userData = {
-                email:tinyUser.email,
-                name:tinyUser.name,
-                invertedName:tinyUser.invertedName,
-                firstName:tinyUser.firstName,
-                lastName:tinyUser.lastName,
-                url:tinyUser.url,
+                email:user.email,
+                name:user.name,
+                invertedName:user.invertedName,
+                firstName:user.firstName,
+                lastName:user.lastName,
+                url:user.url,
                 nextToken:"",
                 pets:[],
             };
+            MyApp.User.getPets();
             m.route.set("/user");
         });
-    }
-};
-
-MyApp.NotSignedIn = {
-    view: function () {
-        return m("div", [
-            m(MyApp.Navbar),
-            m("div.container", [
-                m("div.row.mb-3",
-                    m("div", {
-                        class:"title col-md-12 col-sm-12 col-xs-12"
-                    },
-                        m("h1", "Bienvenue sur TinyPet ! Le paradis des pétitions !"))
-                ),
-                m("div.row.mt-1", [
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/japanese_bridge.jpg",
-                        "alt":"Japanese bridge"
-                    })),
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/instagram_101.jpg",
-                        "alt":"would-be-nice-on-insta-101"
-                    })),
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/floating-homes-in-the-beautiful-dusk-light.jpg",
-                        "alt":"Floating homes in the beautiful dusk light"
-                    })),
-                ]),
-                m("div.row.mt-1", [
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/skyrim.jpg",
-                        "alt":"skyrim > real world"
-                    })),
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/sun_behind_trees.jpg",
-                        "alt":"The sun behind trees (it always is behind things tho)"
-                    })),
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/kaermorhen.jpg",
-                        "alt":"Kaer morhen looks nice"
-                    }))
-                ]),
-                m("div.row.mt-1", [
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/trees.jpg",
-                        "alt":"Mmmmmmh... trees"
-                    })),
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/winter_sunset.jpg",
-                        "alt":"Winter is gorgeous but kinda sucks anyway"
-                    })),
-                    m("div", {
-                        class:"col-md-4 col-sm-4 col-xs-4"
-                    },m("img.my-auto", {
-                        "src":"static/images/windows_like.jpg",
-                        "alt":"Is it a windows wallpaper ??"
-                    }))
-                ]),
-            ])
-        ]);
     }
 };
 
@@ -805,17 +581,16 @@ MyApp.Profile = {
         url: "",
         content:"",
         nextToken:"",
-        followers_count:0,
         pets:[],
     },
     view: function(){
         return m('div',[
             m(MyApp.Navbar),
-            m('div', {class:'container mt-5'},[
+            m('div', {class:'container'},[
                 m('div', {class:"row"},[
-                    m('div', {class:"col-md-2 col-sm-2 col-xs-2"},
+                    m('figure', {class:"image is-96x96"},
                         m("img", {
-                            class:"profile_image",
+                            class:"is-rounded",
                             "src":MyApp.Profile.userData.url
                         })
                     ),
@@ -826,7 +601,7 @@ MyApp.Profile = {
                         m("h2", {
                             class: 'subtitle'
                         }, MyApp.Profile.userData.email)
-                    ),
+                    )/* ,
                     m('div', {class:"col-md-2 col-sm-2 col-xs-2"},
                         m("button", {
                             class:"btn btn-info float-right",
@@ -834,7 +609,7 @@ MyApp.Profile = {
                                 MyApp.Profile.getPets();
                             },
                         },"Rafraîchir")
-                    )]
+                    ) */]
                 ),
                 m("form", {
                     onsubmit: function(e) {
@@ -905,9 +680,8 @@ MyApp.Profile = {
                         ),
                     ]
                 ),
-                m("br.mt-3"),
+                m("div",m(MyApp.PetsTable,{profile: MyApp.Profile, owned: true}))
             ]),
-            m("div",m(MyApp.PostView,{profile: MyApp.Profile, owned: true}))
         ]);
     },
     getPets: function() {
@@ -920,7 +694,6 @@ MyApp.Profile = {
             }
         })
         .then(function(response) {
-            console.log("load_list:",response);
             MyApp.Profile.userData.pets=response.items;
             if ('nextPageToken' in response) {
                 MyApp.Profile.userData.nextToken= response.nextPageToken;
@@ -932,9 +705,9 @@ MyApp.Profile = {
     getNextPets: function() {
         return m.request({
             method: "GET",
-            url: "_ah/api/post_api/1.0/getPost",
+            url: "_ah/api/myApi/v1/petitions/created",
             params: {
-                'email':MyApp.User.userData.email,
+                'email':MyApp.Profile.userData.email,
                 'next':MyApp.Profile.userData.nextToken,
                 'access_token': encodeURIComponent(MyApp.Profile.userData.id)
             }
@@ -989,116 +762,68 @@ MyApp.Profile = {
     },
 };
 
-MyApp.PostView = {
+MyApp.PetsTable = {
     view: function(vnode) {
         return m('div', [
-            m('div.mt-3.mb-3', {
+            m('div', {
                 class:'subtitle'
             },
-                m("h3",vnode.attrs.owned?"My Pets":vnode.attrs.profile.userData.name+"'s Pets")
+                m("h3",vnode.attrs.owned?"Mes pétitions":"Pétitions créées par "+vnode.attrs.profile.userData.name)
             ),
             m('table', {
-                class:'table is-striped',"table":"is-striped"
+                class:'table is-fullwidth'
             },[
-                vnode.attrs.owned?
-                m('tr', [
-                    m('th', {
-                        "style":"width:40vw"
-                    }, "Post"),
-                    m('th', {
-                        "style":"width:30vw"
-                    }, "Caption"),
-                    m('th', {
-                        "style":"width:5vw"
-                    }, "Votes"),
-                    m('th', {
-                        "style":"width:10vw"
-                    }),
-                    m('th', {
-                        "style":"width:10vw"
-                    }),
-                ]):
-                m('tr', [
-                    m('th', {
-                        "style":"width:50vw"
-                    }, "Post"),
-                    m('th', {
-                        "style":"width:30vw"
-                    }, "Caption"),
-                    m('th', {
-                        "style":"width:5vw"
-                    }, "Votes"),
-                    m('th', {
-                        "style":"width:15vw"
-                    }),
+                m('thead', [
+                    m('tr', [
+                        m('th', "Titre"),
+                        m('th', "Description"),
+                        m('th', "Votes"),
+                        m('th', "Objectif"),
+                        m('th', "Date de publication"),
+                        m('th', "Tags"),
+                        m('th', ""),
+                    ])
                 ]),
                 (vnode.attrs.profile.userData.pets != undefined)?
                     vnode.attrs.profile.userData.pets.map(function(item) {
                         if (vnode.attrs.owned) {
-                            return m("tr", [
-                                m('td', {
-                                    "style":"width:40vw"
-                                }, m('img', {
-                                        class:"profile_image",
-                                        'src': item.properties.url
-                                    })
-                                ),
-                                m('td', {
-                                    "style":"width:30vw"
-                                }, m('label', item.properties.body)
-                                ),
-                                m('td', {
-                                    "style":"width:5vw"
-                                },
-                                    m('label',
-                                        item.properties.likes
-                                    )
-                                ),
-                                m("td", {
-                                    "style":"width:10vw"
-                                },
-                                    m("button", {
-                                        "class":"btn btn-danger",
-                                        onclick: function() {
-                                            MyApp.PostView.deletePost(item);
-                                        },
-
-                                        },
-                                    "Supprimer cette pétition")
-                                )
-                            ]);
-                        } else {
-                            return m("tr", [
-                                m('td', {
-                                    "style":"width:50vw"
-                                }, m('img', {
-                                        class:"profile_image",
-                                        'src': item.properties.url
-                                    })
-                                ),
-                                m('td', {
-                                    "style":"width:30vw"
-                                }, m('label', item.properties.body)
-                                ),
-                                m('td', {
-                                    "style":"width:5vw"
-                                },
-                                    m('label',
-                                        item.properties.likes
-                                    )
-                                ),
-                                m("td", {
-                                    "style":"width:15vw"
-                                },
-                                        m("button", {
-                                            "class":"btn btn-success float-right",
-                                            onclick: function () {
-                                                MyApp.PostView.signPet(item.key.name);
+                            return m('tbody', [
+                                    m("tr", [
+                                        m('td', m('label', item.properties.title)),
+                                        m('td', m('label', item.properties.body)),
+                                        m('td', m('label', item.properties.nbVotants)),
+                                        m('td', m('label', item.properties.goal)),
+                                        m('td', m('label', item.properties.date)),
+                                        m('td', m('label', item.properties.tags)),
+                                        m("td", m("button", {
+                                                "class":"btn btn-danger",
+                                                onclick: function() {
+                                                    MyApp.PetsTable.deletePet(item);
+                                                },
                                             },
-                                    },
-                                    "Sign this petition")
-                                ),
-                            ]);
+                                            "Supprimer cette pétition")
+                                        )
+                                    ])
+                                ])
+                        } else {
+                            return m('tbody', [
+                                m("tr", [
+                                    m('td', m('label', item.properties.title)),
+                                    m('td', m('label', item.properties.body)),
+                                    m('td', m('label', item.properties.nbVotants)),
+                                    m('td', m('label', item.properties.goal)),
+                                    m('td', m('label', item.properties.date)),
+                                    m('td', m('label', item.properties.tags)),
+                                    m("td", m("button", {
+                                            "class":"btn btn-info",
+                                            onclick: function () {
+                                                MyApp.PetsTable.signPet(item.key.name);
+                                            },
+                                        },
+                                        "Signer cette pétition")
+                                    )
+                                ])
+                            ])
                         }
                     }):
                 m("div")
@@ -1108,17 +833,17 @@ MyApp.PostView = {
                 onclick: function(e) {
                     vnode.attrs.profile.getNextPets();
                 }
-            }, "Next"),
+            }, "Suivant"),
         ]);
     },
-    deletePost: function (post) {
+    deletePet: function (pet) {
         var data = {
-            'id': post.key.name,
+            'id': pet.key.name,
             'access_token': encodeURIComponent(MyApp.Profile.userData.id)
         };
         m.request ({
             method: "POST",
-            url: "_ah/api/post_api/1.0/deletePost",
+            url: "_ah/api/myApi/v1/petition/delete",
             params: data,
         }).then(function(response) {
             MyApp.Profile.getPets();
@@ -1148,8 +873,7 @@ MyApp.Login = {
         return m('div',[
             m(MyApp.Navbar),
             m('div.container',[
-                m("h1.title", 'Please Sign in with google to use the application.'),
-                m("h2", 'If no sign in button appears on the top left of the screen, please refresh the page.'),
+                m("h1.title", 'Merci de vous connecter avec Google afin d\'accéder à cette page.'),
             ])
         ]);
     }

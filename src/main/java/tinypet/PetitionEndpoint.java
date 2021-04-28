@@ -2,6 +2,8 @@ package tinypet;
 
 import java.util.List;
 import java.util.Date;
+import java.util.ArrayList;
+import java.sql.Timestamp;
 import com.google.api.server.spi.auth.common.User;
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
@@ -22,6 +24,10 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.EmbeddedEntity;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.api.server.spi.config.Nullable;
+import com.google.appengine.api.datastore.KeyFactory;
+import com.google.api.server.spi.response.CollectionResponse;
+import com.google.appengine.api.datastore.QueryResultList;
+import com.google.appengine.api.datastore.Cursor;
 
 @Api(name = "myApi",
      version = "v1",
@@ -49,14 +55,20 @@ public class PetitionEndpoint {
 		if(user == null) { 
 			throw new UnauthorizedException("Invalid credentials");
 		}
+		@SuppressWarnings("unchecked")
+		ArrayList<String> tags = (ArrayList<String>) pet.tags;
+		ArrayList<String> votants = new ArrayList<String>();
+		votants.add(user.getEmail());
 
-		Entity e = new Entity("Petition", Long.MAX_VALUE-(new Date()).getTime()+":"+user.getEmail());
+		Date dateAjd = new Date();
+
+		Entity e = new Entity("Petition", new Timestamp(dateAjd.getTime())+":"+user.getEmail());
 		e.setProperty("owner", user.getEmail());
 		e.setProperty("title", pet.title);
 		e.setProperty("goal", pet.goal);
 		e.setProperty("body", pet.body);
-		e.setProperty("tags", pet.tags);
-		e.setProperty("votants", pet.votants);
+		e.setProperty("tags", tags);
+		e.setProperty("votants", votants);
 		e.setProperty("nbVotants", 0);
 		e.setProperty("date", new Date());
 
@@ -70,22 +82,32 @@ public class PetitionEndpoint {
 	 * Return the petitions created by a user
 	 * @param user
 	 * @param email
+	 * @param cursorString
 	 * @return
 	 */
 	@ApiMethod(name = "getCreatedPetitions", path = "petitions/created", httpMethod = ApiMethod.HttpMethod.GET)
-	public List<Entity> getCreatedPetitions(User user, 
-			@Nullable @Named("email") String email) throws Exception{
+	public CollectionResponse<Entity> getCreatedPetitions(User user, 
+			@Nullable @Named("email") String email, @Nullable @Named("next") String cursorString) throws Exception{
 		
-        if(user == null) {
+        if (user == null) {
 			throw new UnauthorizedException("Invalid credentials");
 		}
-		
-		Query q = new Query("Petition").setFilter(new FilterPredicate("owner", FilterOperator.EQUAL, user.getEmail()));
+
+		Query petQuery = new Query("Petition").setFilter(new FilterPredicate("owner", FilterOperator.EQUAL, email));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		PreparedQuery pq = datastore.prepare(q);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
-		return result;
+		PreparedQuery preparedPetQuery = datastore.prepare(petQuery);
+
+		FetchOptions fetchOptions = FetchOptions.Builder.withLimit(5);
+
+		if (cursorString != null) {
+			fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
+		}
+
+		QueryResultList<Entity> results = preparedPetQuery.asQueryResultList(fetchOptions);
+		cursorString = results.getCursor().toWebSafeString();
+
+		return CollectionResponse.<Entity>builder().setItems(results).setNextPageToken(cursorString).build();
 	}
 
 	/**
@@ -107,22 +129,32 @@ public class PetitionEndpoint {
 	 * Return the petitions signed by a user
 	 * @param user
 	 * @param userId
+	 * @param cursorString
 	 * @return
 	 */
-	@ApiMethod(name = "getSignedPetitions", path = "petitions/signed/{userId}", httpMethod = ApiMethod.HttpMethod.GET)
-	public List<Entity> getSignedPetitions(User user, 
-			@Named("votants") String votant) throws Exception{
+	@ApiMethod(name = "getSignedPetitions", path = "petitions/signed", httpMethod = ApiMethod.HttpMethod.GET)
+	public CollectionResponse<Entity> getSignedPetitions(User user, 
+			@Named("votants") String votant, @Nullable @Named("next") String cursorString) throws Exception{
 		
         if(user == null) {
 			throw new UnauthorizedException("Invalid credentials");
 		}
 		
-		Query q = new Query("Petition").setFilter(new FilterPredicate("votants", FilterOperator.EQUAL, votant));
+		Query petQuery = new Query("Petition").setFilter(new FilterPredicate("votants", FilterOperator.EQUAL, votant));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		PreparedQuery pq = datastore.prepare(q);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
-		return result;
+		PreparedQuery preparedPetQuery = datastore.prepare(petQuery);
+
+		FetchOptions fetchOptions = FetchOptions.Builder.withLimit(5);
+
+		if (cursorString != null) {
+			fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
+		}
+
+		QueryResultList<Entity> results = preparedPetQuery.asQueryResultList(fetchOptions);
+		cursorString = results.getCursor().toWebSafeString();
+
+		return CollectionResponse.<Entity>builder().setItems(results).setNextPageToken(cursorString).build();
 	}
 
     /**
@@ -130,7 +162,7 @@ public class PetitionEndpoint {
 	 * @param tag
 	 * @return
 	 */
-	@ApiMethod(name = "getPetitionsWithTag", path = "petitions/tagged/{tag}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "getPetitionsWithTag", path = "petitions/searchByTag", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getPetitionsWithTag(@Named("tags") String tag) throws Exception{
 		Query q = new Query("Petition").setFilter(new FilterPredicate("tags", FilterOperator.EQUAL, tag));
 
@@ -138,5 +170,29 @@ public class PetitionEndpoint {
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
 		return result;
+	}
+
+	/**
+	 * Delete a petition
+	 * @param user
+	 * @param pet
+	 * @return
+	 */
+	@ApiMethod(name = "deletePet", path = "petition/delete", httpMethod = HttpMethod.POST)
+	public Entity deletePet(User user, Petition pet) throws UnauthorizedException {
+
+		if (user == null) {
+			throw new UnauthorizedException("Invalid credentials");
+		}
+
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+
+		Transaction deletePetTransaction = datastore.beginTransaction();
+		Key petKey = KeyFactory.createKey("Petition", pet.getId());
+
+		datastore.delete(petKey);
+		deletePetTransaction.commit();
+
+		return null;
 	}
 }
