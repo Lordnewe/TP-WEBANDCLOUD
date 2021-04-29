@@ -148,7 +148,10 @@ MyApp.Navbar = {
 				])
             ]),
             m("div", {class:"navbar-menu"}, [
-                m(MyApp.postNewPetMenu),
+                m("div", {class:"navbar-start"}, [
+                    m(MyApp.postNewPetMenu),
+                    m(MyApp.Searchbar)
+                ]),
                 m("div", {class:"navbar-end"}, [
                     m("div", {class:"navbar-item"}, [
                         MyApp.Profile.userData.name
@@ -161,12 +164,6 @@ MyApp.Navbar = {
                             })
                         ])
                     ]),
-                    m("div", {class:"navbar-item"}, [
-                        m("div", {class:"buttons"}, [
-                            m("span", {class: "g-signin2", id:"signin-button"}, [
-                            ])
-                        ])
-                    ]),
                     m(MyApp.signOutButton)
                 ])
             ]),
@@ -177,11 +174,9 @@ MyApp.Navbar = {
 MyApp.postNewPetMenu = {
     view: function() {
         if(MyApp.Profile.userData.id != "") {
-            return m("div", {class:"navbar-start"}, [
-                m(m.route.Link, {href: "/postNewPet", class: "navbar-item"}, [
-                    m("i", {class: "fas fa-vote-yea"}),
-                    m("p"," Poster une nouvelle pétition")
-                ])
+            return m(m.route.Link, {href: "/postNewPet", class: "navbar-item"}, [
+                m("i", {class: "fas fa-vote-yea"}),
+                m("p"," Poster une nouvelle pétition")
             ])
         }
     }
@@ -201,6 +196,13 @@ MyApp.signOutButton = {
                     ])
                 ])
             ])
+        } else {
+            return m("div", {class:"navbar-item"}, [
+                m("div", {class:"buttons"}, [
+                    m("span", {class: "g-signin2", id:"signin-button"}, [
+                    ])
+                ])
+            ])
         }
     }
 };
@@ -208,32 +210,27 @@ MyApp.signOutButton = {
 MyApp.Searchbar = {
     view: function () {
         if(MyApp.Profile.userData.id!="") {
-            return m("div.form-inline", [
-                m("div",
-                    m("form.form-inline.my-2.my-lg-0[action='/search'][method='post']", {
-                        id:"searchForm"
-                    }, [
-                        m("input.form-control.mr-sm-2[aria-label='Search'][id='search'][name='search'][placeholder='Search tags'][type='search']"),
-                        m("input[id='me'][name='me'][type='hidden'][value=" + MyApp.Profile.userData.email + "]"),
-                        m("button.btn.btn-outline-success.my-2.my-sm-0.mr-2[type='submit']",{
-                            onclick: function (e) {
-                                e.preventDefault();
-                                MyApp.Searchbar.searchPetByTag();
-                            }
-                        } , "Search"),
+            return m("div", {class:"navbar-item"}, [
+                    m("form[action='/search'][method='post']", [
+                        m("div", {class:"field has-addons"}, [
+                            m("p", {class:"control"}, [
+                                m("input.input[aria-label='Search'][id='search'][name='search'][placeholder='Rechercher une pétition'][type='search']")
+                            ]),
+                            m("input[id='me'][name='me'][type='hidden'][value=" + MyApp.Profile.userData.email + "]"),
+                            m("p", {class:"control"}, [
+                                m("button.button.is-primary[type='submit']",{
+                                    onclick: function (e) {
+                                        e.preventDefault();
+                                        MyApp.Searchbar.searchPetByTagOrTitle();
+                                    }
+                                } , "Rechercher"),
+                            ])
                     ])
-                )
-            ]);
-        } else {
-            return (
-                m("form.form-inline.my-2.my-lg-0[action='/search'][method='post']", [
-                    m("input.form-control.mr-sm-2[aria-label='Search'][id='search'][name='search'][placeholder='Please connect beforehand'][type='search'] [disabled='true']"),
-                    m("button.btn.btn-outline-success.my-2.my-sm-0[type='submit'] [disabled='true']", "Search")
                 ])
-            );
+            ])
         }
     },
-    searchPetByTag: function () {
+    searchPetByTagOrTitle: function () {
         m.request({
             method: "GET",
             params: {
@@ -241,10 +238,10 @@ MyApp.Searchbar = {
                 'search':$("#search").val(),
                 'access_token': encodeURIComponent(MyApp.Profile.userData.id)
             },
-            url: "_ah/api/myApi/v1/petitions/searchByTag"
+            url: "_ah/api/myApi/v1/petitions/searchByTagOrTitle"
         })
         .then(function(response) {
-            console.log("users:",response);
+            console.log("pets:",response);
             var i = 0;
             var pet = {};
             if(response.items === undefined) {
@@ -252,14 +249,16 @@ MyApp.Searchbar = {
             } else {
                 response.items.forEach(function (item) {
                     pet=item.properties;
+                    petKey=item.key;
                     MyApp.SearchedPetList.petList[i] = {
-                        email:tinyUser.email,
-                        name:tinyUser.name,
-                        invertedName:tinyUser.invertedName,
-                        firstName:tinyUser.firstName,
-                        lastName:tinyUser.lastName,
-                        url:tinyUser.url,
-                        friend:friend,
+                        key:petKey,
+                        title:pet.title,
+                        owner:pet.owner,
+                        date:pet.date,
+                        body:pet.body,
+                        goal:pet.goal,
+                        tags:pet.tags,
+                        nbVotants:pet.nbVotants
                     };
                     i++;
                 });
@@ -278,43 +277,73 @@ MyApp.SearchedPetList = {
                 m(MyApp.Navbar),
                 MyApp.SearchedPetList.petList.length != 0 ?
                     m("div.container", [
+                        m('div', {
+                            class:'subtitle'
+                        },
+                            m("h1","Résultats de la recherche")
+                        ),
                         m('table', {
-                            class:'table is-striped',
-                            "table":"is-striped"
+                            class:'table is-fullwidth'
                         },[
-                            MyApp.SearchedPetList.petList.map(function(pet) {
-                                return m("tr", {
-                                    "style":"height:9vh"
-                                }, [
-                                    m('td', {
-                                        "style":"width:10vw",
-                                        onclick: function () {
-                                            MyApp.SearchedPetList.goToUser(pet.owner);
-                                        }
-                                    }
-                                    ),
-                                    m('td.inline', {
-                                        "style":"width:80vw",
-                                        onclick: function () {
-                                            MyApp.SearchedTagsList.goToUser(pet.owner);
-                                        }
-                                    }, [
-                                        m('h1', pet.title),
-                                        m('span', "("+pet.owner+")"),
-                                    ]),
-                                    m('td', {
-                                        "style":"width:12vw"
-                                    })
-                                ]);
-                            })
+                            m('thead', [
+                                m('tr', [
+                                    m('th', "Titre"),
+                                    m('th', "Description"),
+                                    m('th', "Votes"),
+                                    m('th', "Objectif"),
+                                    m('th', "Date de publication"),
+                                    m('th', "Tags"),
+                                    m('th', ""),
+                                ])
+                            ]),
+                                MyApp.SearchedPetList.petList.map(function(pet) {
+                                        return m('tbody', [
+                                            m("tr", [
+                                                m('td', m('a', {
+                                                    onclick: function () {
+                                                        MyApp.SearchedPetList.goToUser(pet.owner);
+                                                    }
+                                                }, pet.owner)),
+                                                m('td', m('label', pet.title)),
+                                                m('td', m('label', pet.body)),
+                                                m('td', m('label', pet.nbVotants)),
+                                                m('td', m('label', pet.goal)),
+                                                m('td', m('label', pet.date)),
+                                                m('td', m('label', pet.tags)),
+                                                m("td", m("button", {
+                                                        "class":"button is-info",
+                                                        onclick: function () {
+                                                            MyApp.SearchedPetList.signPet(pet.key.name);
+                                                        },
+                                                    },
+                                                    "Signer cette pétition")
+                                                )
+                                            ])
+                                        ])
+                                })
                         ])
-                    ])
-                    :
-                    m("div.container",
-                        m("h1.title", "Pas de pétition trouvée")
-                    )
+                    ]
+                )
+                :
+                m("div.container",
+                    m("h1.title", "Pas de pétition trouvée")
+                )
             )
         );
+    },
+    signPet: function (signedPet) {
+	    var data = {
+            'signedPet': signedPet,
+            'email': MyApp.Profile.userData.email
+        };
+        m.request ({
+	 		method: "POST",
+            url: "_ah/api/myApi/v1/petition/sign"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),
+            params: data,
+		}).then(function(response){
+            MyApp.Searchbar.searchPetByTagOrTitle();
+            m.redraw();
+        });
     },
     goToUser: function (email) {
         m.request({
@@ -322,11 +351,9 @@ MyApp.SearchedPetList = {
             params: {
                 'email': email,
             },
-            url: "_ah/api/myApi/v1/user/getInfos"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),
-        })
+            url: "_ah/api/myApi/v1/user/getInfos"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),        })
         .then(function (response) {
             var user = response.properties;
-
             MyApp.User.userData = {
                 email:user.email,
                 name:user.name,
@@ -432,11 +459,12 @@ MyApp.Homepage = {
                     }
                 }, "Rafraîchir"),
                     MyApp.Homepage.loading_gif?
-                        m("div",
+                        m("div.has-text-centered",
                             m("img", {
-                                "style":"text-center",
+                                "width":"454",
+                                "height":"auto",
                                 "src":"ressources/img/loading.gif",
-                                "alt":"Loading..."
+                                "alt":"Chargement..."
                             })
                         )
                         :

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Date;
 import java.util.ArrayList;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import com.google.api.server.spi.auth.common.User;
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
@@ -28,6 +29,8 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.api.server.spi.response.CollectionResponse;
 import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.Query.CompositeFilter;
+import com.google.appengine.api.datastore.Query.CompositeFilterOperator;
 
 @Api(name = "myApi",
      version = "v1",
@@ -162,14 +165,32 @@ public class PetitionEndpoint {
 	 * @param tag
 	 * @return
 	 */
-	@ApiMethod(name = "getPetitionsWithTag", path = "petitions/searchByTag", httpMethod = ApiMethod.HttpMethod.GET)
-	public List<Entity> getPetitionsWithTag(@Named("tags") String tag) throws Exception{
-		Query q = new Query("Petition").setFilter(new FilterPredicate("tags", FilterOperator.EQUAL, tag));
+	@ApiMethod(name = "getPetitionsWithTagOrTitle", path = "petitions/searchByTagOrTitle", httpMethod = ApiMethod.HttpMethod.GET)
+	public CollectionResponse<Entity> getPetitionsWithTagOrTitle(User user, @Named("search") String search, @Nullable @Named("next") String cursorString) throws Exception{
+
+        if (user == null) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+
+		Query q = new Query("Petition").setFilter(
+			new CompositeFilter(CompositeFilterOperator.OR, Arrays.asList(
+				new FilterPredicate("title", FilterOperator.EQUAL, search),
+				new FilterPredicate("tags", FilterOperator.EQUAL, search)
+		)));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		PreparedQuery pq = datastore.prepare(q);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withLimit(10));
-		return result;
+        PreparedQuery preparedSearchQuery = datastore.prepare(q);
+        FetchOptions fetchOptions = FetchOptions.Builder.withLimit(10);
+
+		if (cursorString != null) {
+            fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
+            QueryResultList<Entity> results = preparedSearchQuery.asQueryResultList(fetchOptions);
+            cursorString = results.getCursor().toWebSafeString();
+
+            return CollectionResponse.<Entity>builder().setItems(results).setNextPageToken(cursorString).build();
+		} else {
+            return CollectionResponse.<Entity>builder().setItems(preparedSearchQuery.asQueryResultList(fetchOptions)).build();
+        }
 	}
 
 	/**
