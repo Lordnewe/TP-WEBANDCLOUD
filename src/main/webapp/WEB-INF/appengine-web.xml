@@ -16,7 +16,9 @@
     <include path="/**.eot" ></include>
     <include path="/**.ttf" ></include>
     <include path="/**.woff"></include>
-    <include path="/**.woff2"></include>    
+    <include path="/**.woff2"></include>
+    <include path="/**.gif"></include>
+    <include path="/**.manifest"></include>
   </static-files>
   <system-properties>
     <property name="java.util.logging.config.file" value="WEB-INF/logging.properties"/>
