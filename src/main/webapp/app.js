@@ -6,13 +6,22 @@ m.route(document.body, "/", {
             return MyApp.Homepage;
         }
     },
-    "/profile": {
+    "/myProfile": {
         onmatch: function() {
             if (!auth2.isSignedIn.get()) m.route.set("/login");
             else {
                 MyApp.User.userData = {};
-                MyApp.Profile.getPets();
+                MyApp.Profile.getCreatedPets();
+                MyApp.Profile.getSignedPets();
                 return MyApp.Profile;
+            }
+        }
+    },
+    "/postNewPet": {
+        onmatch: function() {
+            if (!auth2.isSignedIn.get()) m.route.set("/login");
+            else {
+                return MyApp.PostNewPet;
             }
         }
     },
@@ -132,7 +141,7 @@ var MyApp = {
 
 MyApp.Navbar = {
     view: function () {
-        return m("nav", {class: "navbar is-link"}, [
+        return m("nav", {class: "navbar is-fixed-top is-link"}, [
             m("div", {class: "navbar-brand"}, [
                 m(m.route.Link, {href: "/", class: "navbar-item"}, [
                     m("i", {class: "fas fa-home"}),
@@ -140,17 +149,17 @@ MyApp.Navbar = {
 				])
             ]),
             m("div", {class:"navbar-menu"}, [
-                /* m("div", {class:"navbar-start"}, [
-                    m(m.route.Link, {href: "/newPet", class: "navbar-item"}, [
+                m("div", {class:"navbar-start"}, [
+                    m(m.route.Link, {href: "/postNewPet", class: "navbar-item"}, [
                         m("i", {class: "fas fa-vote-yea"}),
                         m("p"," Poster une nouvelle pétition")
                     ])
-                ]), */
+                ]),
                 m("div", {class:"navbar-end"}, [
                     m("div", {class:"navbar-item"}, [
                         MyApp.Profile.userData.name
                     ]),
-                    m(m.route.Link, {href: "/profile", class: "navbar-item"}, [
+                    m(m.route.Link, {href: "/myProfile", class: "navbar-item"}, [
                         m("figure", {class: "image is-32x32"}, [
                             m("img", {
                                 class: "is-rounded",
@@ -246,32 +255,6 @@ MyApp.Searchbar = {
     }
 };
 
-MyApp.profilePicAndSignOut = {
-    view: function () {
-        if(MyApp.Profile.userData.id!="") {
-            return m("div.form-inline.my-2.my-lg-0", [
-                m("span[aria-controls='collapseSignOut'][aria-expanded='false'][data-target='#collapseSignOut'][data-toggle='collapse']",
-                    m("img.mr-sm-2", {
-                        class:"profile_image",
-                        "style":"height:42px",
-                        "src":MyApp.Profile.userData.url,
-                        "alt":MyApp.Profile.userData.name,
-                    })
-                ),
-                m(".collapse[id='collapseSignOut'].my-2.my-sm-", [
-                    m("button.btn.btn-info", {
-                        onclick: function () {
-                            signOut();
-                        }
-                    }, "Sign Out")
-                ]),
-                ]);
-        } else {
-            return m("div");
-        }
-    }
-};
-
 MyApp.SearchedPetList = {
     petList: [],
     view: function (vnode) {
@@ -339,7 +322,7 @@ MyApp.SearchedPetList = {
                 nextToken:"",
                 pets:[],
             };
-            MyApp.User.getPets();
+            MyApp.User.getCreatedPets();
             m.route.set("/user");
         });
     }
@@ -355,11 +338,13 @@ MyApp.User = {
                 m('div', {class:'container'},[
                     m('div', {class:"row"},[
                         m('div', {class:"col-md-2 col-sm-2 col-xs-2"},
-                            m("img", {
-                                class:"profile_image",
-                                "src":MyApp.User.userData.url,
-                                "alt":MyApp.User.userData.name+"'s profile picture"
-                            })
+                            m("figure", {class: "image is-96x96"}, [
+                                m("img", {
+                                    class: "is-rounded",
+                                    "src": MyApp.User.userData.url,
+                                    "alt":"Photo de profil de "+MyApp.User.userData.name
+                                })
+                            ])
                         ),
                         m('div', {class:"col-md-3 col-sm-3 col-xs-3"},
                             m("h1", {
@@ -375,7 +360,7 @@ MyApp.User = {
             ])
         );
     },
-    getPets: function() {
+    getCreatedPets: function() {
         return m.request({
             method: "GET",
             url: "_ah/api/myApi/v1/petitions/created",
@@ -394,7 +379,7 @@ MyApp.User = {
             }
         });
     },
-    getNextPets: function() {
+    getNextCreatedPets: function() {
         console.log(MyApp.Profile.userData.nextToken);
         return m.request({
             method: "GET",
@@ -426,7 +411,7 @@ MyApp.Homepage = {
             m(MyApp.Navbar),
             m("div.container", [
                 m("h1.title","Top 10 des pétitions"),
-                m("button.btn.mb-5", {
+                m("button.button is-info", {
                     onclick: function () {
                         MyApp.Homepage.getTopTen();
                     }
@@ -565,8 +550,106 @@ MyApp.Homepage = {
                 nextToken:"",
                 pets:[],
             };
-            MyApp.User.getPets();
+            MyApp.User.getCreatedPets();
             m.route.set("/user");
+        });
+    }
+};
+
+MyApp.PostNewPet = {
+    view: function(){
+        return m('div',[
+            m(MyApp.Navbar),
+            m('div', {class:'container'},[
+                m("h1.title","Poster une nouvelle pétition"),
+                m("form", {
+                    onsubmit: function(e) {
+                        e.preventDefault();
+                        var pet_goal = "";
+                        var pet_body = "";
+                        var pet_tags = "";
+                        var pet_title = "";
+                        pet_title = $("#new_pet_title").val();
+                        pet_goal = $("#new_pet_goal").val();
+                        pet_body = $("#new_pet_body").val();
+                        pet_tags = $("#new_pet_tags").val();
+                        MyApp.Profile.newPet(pet_goal,pet_title,pet_tags,pet_body);
+                    }},
+                    [
+                        m('div', {
+                            class:'field'
+                        },[
+                            m("label", {
+                                class:'label',
+                            },"Titre"),
+                            m('div',{class:'control'},
+                                m("input[type=text]", {
+                                    class:'input',
+                                    placeholder:"Le titre de votre pétition",
+                                    required:"required",
+                                    id:"new_pet_title"
+                                })
+                            ),
+                        ]),
+                        m('div',{class:'field'},[
+                            m("label", {class: 'label'},"Description"),
+                            m('div',{class:'control'},
+                                m("input[type=textarea]", {
+                                    class:'textarea',
+                                    placeholder:"Décrivez votre pétition",
+                                    required:"required",
+                                    id:"new_pet_body"
+                                })
+                            ),
+                        ]),
+                        m('div',{class:'field'},[
+                            m("label", {class: 'label'},"But"),
+                            m('div',{class:'control'},
+                                m("input[type=number]", {
+                                    class:'input',
+                                    placeholder:"Le but visé en termes de votes",
+                                    required:"required",
+                                    id:"new_pet_goal"
+                                })
+                            ),
+                        ]),
+                        m('div', {
+                            class:'field'
+                        },[
+                            m("label", {
+                                class:'label',
+                            },"Hashtags"),
+                            m('div',{class:'control'},
+                                m("input[type=text]", {
+                                    class:'input',
+                                    placeholder:"Les différents tags séparés par des virgules (exemple : #cat,#food,#government)",
+                                    required:"required",
+                                    id:"new_pet_tags"
+                                })
+                            ),
+                        ]),
+                        m("button[type=submit]", {
+                            class:'button is-info'
+                        },"Poster la pétition")
+                    ]
+                ),
+            ])
+        ])
+    },
+    newPet: function(goal, title, tags, body) {
+        var data= {};
+        var arrayTags = tags.split(',');
+        data= {
+            'body': body,
+            'goal': goal,
+            'title': title,
+            'tags': arrayTags,
+            'access_token': encodeURIComponent(MyApp.Profile.userData.id)
+        };
+        return m.request({
+            method: "POST",
+            url: "_ah/api/myApi/v1/petition/create",
+            params: data,
         });
     }
 };
@@ -581,7 +664,8 @@ MyApp.Profile = {
         url: "",
         content:"",
         nextToken:"",
-        pets:[],
+        petsCreated:[],
+        petsSigned:[],
     },
     view: function(){
         return m('div',[
@@ -611,80 +695,12 @@ MyApp.Profile = {
                         },"Rafraîchir")
                     ) */]
                 ),
-                m("form", {
-                    onsubmit: function(e) {
-                        e.preventDefault();
-                        var pet_goal = "";
-                        var pet_body = "";
-                        var pet_tags = "";
-                        var pet_title = "";
-                        pet_title = $("#new_pet_title").val();
-                        pet_goal = $("#new_pet_goal").val();
-                        pet_body = $("#new_pet_body").val();
-                        pet_tags = $("#new_pet_tags").val();
-                        MyApp.Profile.newPet(pet_goal,pet_title,pet_tags,pet_body);
-                    }},
-                    [
-                        m('div', {
-                            class:'field'
-                        },[
-                            m("label", {
-                                class:'label',
-                            },"Titre"),
-                            m('div',{class:'control'},
-                                m("input[type=text]", {
-                                    class:'input',
-                                    placeholder:"Le titre de votre pétition",
-                                    id:"new_pet_title"
-                                })
-                            ),
-                        ]),
-                        m('div',{class:'field'},[
-                            m("label", {class: 'label'},"Description"),
-                            m('div',{class:'control'},
-                                m("input[type=textarea]", {
-                                    class:'textarea',
-                                    placeholder:"Décrivez votre pétition",
-                                    id:"new_pet_body"
-                                })
-                            ),
-                        ]),
-                        m('div',{class:'field'},[
-                            m("label", {class: 'label'},"But"),
-                            m('div',{class:'control'},
-                                m("input[type=number]", {
-                                    class:'input',
-                                    placeholder:"Le but visé en termes de votes",
-                                    id:"new_pet_goal"
-                                })
-                            ),
-                        ]),
-                        m('div', {
-                            class:'field'
-                        },[
-                            m("label", {
-                                class:'label',
-                            },"Hashtags"),
-                            m('div',{class:'control'},
-                                m("input[type=text]", {
-                                    class:'input',
-                                    placeholder:"Les différents tags séparés par des virgules (exemple : #cat,#food,#government)",
-                                    id:"new_pet_tags"
-                                })
-                            ),
-                        ]),
-                        m('div',{class:'control mt-3'},
-                            m("button[type=submit]", {
-                                class:'float-right btn btn-success'
-                            },"Poster la pétition")
-                        ),
-                    ]
-                ),
-                m("div",m(MyApp.PetsTable,{profile: MyApp.Profile, owned: true}))
+                m("div",m(MyApp.PetsTable,{profile: MyApp.Profile, owned: true})),
+                m("div",m(MyApp.SignedPetsTable,{profile: MyApp.Profile}))
             ]),
         ]);
     },
-    getPets: function() {
+    getCreatedPets: function() {
         return m.request({
             method: "GET",
             url: "_ah/api/myApi/v1/petitions/created",
@@ -694,7 +710,7 @@ MyApp.Profile = {
             }
         })
         .then(function(response) {
-            MyApp.Profile.userData.pets=response.items;
+            MyApp.Profile.userData.petsCreated=response.items;
             if ('nextPageToken' in response) {
                 MyApp.Profile.userData.nextToken= response.nextPageToken;
             } else {
@@ -702,7 +718,7 @@ MyApp.Profile = {
             }
         });
     },
-    getNextPets: function() {
+    getNextCreatedPets: function() {
         return m.request({
             method: "GET",
             url: "_ah/api/myApi/v1/petitions/created",
@@ -714,7 +730,46 @@ MyApp.Profile = {
         })
         .then(function(response) {
             if(response.items != undefined) {
-                MyApp.Profile.userData.pets = response.items;
+                MyApp.Profile.userData.petsCreated = response.items;
+                if ('nextPageToken' in response) {
+                    MyApp.Profile.userData.nextToken = response.nextPageToken;
+                } else {
+                    MyApp.Profile.nextToken = "";
+                }
+            }
+        });
+    },
+    getSignedPets: function() {
+        return m.request({
+            method: "GET",
+            url: "_ah/api/myApi/v1/petitions/signed",
+            params : {
+                'email':MyApp.Profile.userData.email,
+                'access_token': encodeURIComponent(MyApp.Profile.userData.id)
+            }
+        })
+        .then(function(response) {
+            MyApp.Profile.userData.petsSigned=response.items;
+            if ('nextPageToken' in response) {
+                MyApp.Profile.userData.nextToken= response.nextPageToken;
+            } else {
+                MyApp.Profile.userData.nextToken="";
+            }
+        });
+    },
+    getNextSignedPets: function() {
+        return m.request({
+            method: "GET",
+            url: "_ah/api/myApi/v1/petitions/signed",
+            params: {
+                'email':MyApp.Profile.userData.email,
+                'next':MyApp.Profile.userData.nextToken,
+                'access_token': encodeURIComponent(MyApp.Profile.userData.id)
+            }
+        })
+        .then(function(response) {
+            if(response.items != undefined) {
+                MyApp.Profile.userData.petsSigned = response.items;
                 if ('nextPageToken' in response) {
                     MyApp.Profile.userData.nextToken = response.nextPageToken;
                 } else {
@@ -739,7 +794,7 @@ MyApp.Profile = {
             params: data,
         })
         .then(function(response) {
-            MyApp.Profile.getPets();
+            MyApp.Profile.getCreatedPets();
         });
     },
     createUser: function() {
@@ -768,7 +823,7 @@ MyApp.PetsTable = {
             m('div', {
                 class:'subtitle'
             },
-                m("h3",vnode.attrs.owned?"Mes pétitions":"Pétitions créées par "+vnode.attrs.profile.userData.name)
+                m("h3",vnode.attrs.owned?"Mes pétitions créées":"Pétitions créées par "+vnode.attrs.profile.userData.name)
             ),
             m('table', {
                 class:'table is-fullwidth'
@@ -784,8 +839,8 @@ MyApp.PetsTable = {
                         m('th', ""),
                     ])
                 ]),
-                (vnode.attrs.profile.userData.pets != undefined)?
-                    vnode.attrs.profile.userData.pets.map(function(item) {
+                (vnode.attrs.profile.userData.petsCreated != undefined)?
+                    vnode.attrs.profile.userData.petsCreated.map(function(item) {
                         if (vnode.attrs.owned) {
                             return m('tbody', [
                                     m("tr", [
@@ -796,7 +851,7 @@ MyApp.PetsTable = {
                                         m('td', m('label', item.properties.date)),
                                         m('td', m('label', item.properties.tags)),
                                         m("td", m("button", {
-                                                "class":"btn btn-danger",
+                                                "class":"button is-danger",
                                                 onclick: function() {
                                                     MyApp.PetsTable.deletePet(item);
                                                 },
@@ -815,7 +870,7 @@ MyApp.PetsTable = {
                                     m('td', m('label', item.properties.date)),
                                     m('td', m('label', item.properties.tags)),
                                     m("td", m("button", {
-                                            "class":"btn btn-info",
+                                            "class":"button is-info",
                                             onclick: function () {
                                                 MyApp.PetsTable.signPet(item.key.name);
                                             },
@@ -829,9 +884,9 @@ MyApp.PetsTable = {
                 m("div")
             ]),
             m('button',{
-                class: 'btn btn-info float-right mt-3',
+                class: 'button is-info',
                 onclick: function(e) {
-                    vnode.attrs.profile.getNextPets();
+                    vnode.attrs.profile.getNextCreatedPets();
                 }
             }, "Suivant"),
         ]);
@@ -846,7 +901,7 @@ MyApp.PetsTable = {
             url: "_ah/api/myApi/v1/petition/delete",
             params: data,
         }).then(function(response) {
-            MyApp.Profile.getPets();
+            MyApp.Profile.getCreatedPets();
             m.redraw();
         });
 
@@ -862,10 +917,65 @@ MyApp.PetsTable = {
             url: "_ah/api/myApi/v1/petition/sign",
             params: data,
 		}).then(function() {
-            MyApp.User.getPets();
+            MyApp.User.getCreatedPets();
             m.redraw();
         });
 	}
+};
+
+MyApp.SignedPetsTable = {
+    view: function(vnode) {
+        return m('div', [
+            m('div', {
+                class:'subtitle'
+            },
+                m("h3","Mes pétitions signées")
+            ),
+            m('table', {
+                class:'table is-fullwidth'
+            },[
+                m('thead', [
+                    m('tr', [
+                        m('th', "Titre"),
+                        m('th', "Description"),
+                        m('th', "Votes"),
+                        m('th', "Objectif"),
+                        m('th', "Date de publication"),
+                        m('th', "Tags"),
+                        m('th', ""),
+                    ])
+                ]),
+                (vnode.attrs.profile.userData.petsSigned != undefined)?
+                    vnode.attrs.profile.userData.petsSigned.map(function(item) {
+                        return m('tbody', [
+                            m("tr", [
+                                m('td', m('label', item.properties.title)),
+                                m('td', m('label', item.properties.body)),
+                                m('td', m('label', item.properties.nbVotants)),
+                                m('td', m('label', item.properties.goal)),
+                                m('td', m('label', item.properties.date)),
+                                m('td', m('label', item.properties.tags)),
+                                m("td", m("button", {
+                                        "class":"button is-info",
+                                        onclick: function () {
+                                            MyApp.PetsTable.signPet(item.key.name);
+                                        },
+                                    },
+                                    "Signer cette pétition")
+                                )
+                            ])
+                        ])
+                    }):
+                m("div")
+            ]),
+            m('button',{
+                class: 'button is-info',
+                onclick: function(e) {
+                    vnode.attrs.profile.getNextSignedPets();
+                }
+            }, "Suivant"),
+        ]);
+    }
 };
 
 MyApp.Login = {

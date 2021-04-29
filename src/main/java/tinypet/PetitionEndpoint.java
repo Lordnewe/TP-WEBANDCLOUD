@@ -58,7 +58,7 @@ public class PetitionEndpoint {
 		@SuppressWarnings("unchecked")
 		ArrayList<String> tags = (ArrayList<String>) pet.tags;
 		ArrayList<String> votants = new ArrayList<String>();
-		votants.add(user.getEmail());
+		votants.add(" ");
 
 		Date dateAjd = new Date();
 
@@ -134,13 +134,13 @@ public class PetitionEndpoint {
 	 */
 	@ApiMethod(name = "getSignedPetitions", path = "petitions/signed", httpMethod = ApiMethod.HttpMethod.GET)
 	public CollectionResponse<Entity> getSignedPetitions(User user, 
-			@Named("votants") String votant, @Nullable @Named("next") String cursorString) throws Exception{
+			@Named("email") String email, @Nullable @Named("next") String cursorString) throws Exception{
 		
         if(user == null) {
 			throw new UnauthorizedException("Invalid credentials");
 		}
 		
-		Query petQuery = new Query("Petition").setFilter(new FilterPredicate("votants", FilterOperator.EQUAL, votant));
+		Query petQuery = new Query("Petition").setFilter(new FilterPredicate("votants", FilterOperator.EQUAL, email));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery preparedPetQuery = datastore.prepare(petQuery);
