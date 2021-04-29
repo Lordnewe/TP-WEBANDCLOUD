@@ -133,7 +133,6 @@ var MyApp = {
         return (
             m("div", [
                 m(MyApp.Navbar, {}),
-
             ])
         );
     }
@@ -144,17 +143,12 @@ MyApp.Navbar = {
         return m("nav", {class: "navbar is-fixed-top is-link"}, [
             m("div", {class: "navbar-brand"}, [
                 m(m.route.Link, {href: "/", class: "navbar-item"}, [
-                    m("i", {class: "fas fa-home"}),
+                    m("img", {"src": "ressources/img/apple-touch-icon.png"}),
 					m("p"," TinyPet")
 				])
             ]),
             m("div", {class:"navbar-menu"}, [
-                m("div", {class:"navbar-start"}, [
-                    m(m.route.Link, {href: "/postNewPet", class: "navbar-item"}, [
-                        m("i", {class: "fas fa-vote-yea"}),
-                        m("p"," Poster une nouvelle pétition")
-                    ])
-                ]),
+                m(MyApp.postNewPetMenu),
                 m("div", {class:"navbar-end"}, [
                     m("div", {class:"navbar-item"}, [
                         MyApp.Profile.userData.name
@@ -170,23 +164,44 @@ MyApp.Navbar = {
                     m("div", {class:"navbar-item"}, [
                         m("div", {class:"buttons"}, [
                             m("span", {class: "g-signin2", id:"signin-button"}, [
-                                //m("p","Se connecter")
                             ])
                         ])
-                    ])
+                    ]),
+                    m(MyApp.signOutButton)
                 ])
             ]),
         ])
     },
 };
 
-MyApp.signInButton = {
-    view: function () {
-        return m("div", {
-                "class":"g-signin2",
-                "id":"signin-button"
-            }
-        );
+MyApp.postNewPetMenu = {
+    view: function() {
+        if(MyApp.Profile.userData.id != "") {
+            return m("div", {class:"navbar-start"}, [
+                m(m.route.Link, {href: "/postNewPet", class: "navbar-item"}, [
+                    m("i", {class: "fas fa-vote-yea"}),
+                    m("p"," Poster une nouvelle pétition")
+                ])
+            ])
+        }
+    }
+};
+
+MyApp.signOutButton = {
+    view: function() {
+        if(MyApp.Profile.userData.id != "") {
+            return m("div", {class:"navbar-item"}, [
+                m("div", {class:"buttons"}, [
+                    m("span", {class: "button is-danger",
+                    onclick: function() {
+                        signOut();
+                    }
+                }, [
+                        "Déconnexion"
+                    ])
+                ])
+            ])
+        }
     }
 };
 
@@ -420,7 +435,7 @@ MyApp.Homepage = {
                         m("div",
                             m("img", {
                                 "style":"text-center",
-                                "src":"static/images/loading.gif",
+                                "src":"ressources/img/loading.gif",
                                 "alt":"Loading..."
                             })
                         )
@@ -956,12 +971,12 @@ MyApp.SignedPetsTable = {
                                 m('td', m('label', item.properties.date)),
                                 m('td', m('label', item.properties.tags)),
                                 m("td", m("button", {
-                                        "class":"button is-info",
+                                        "class":"button is-warning",
                                         onclick: function () {
-                                            MyApp.PetsTable.signPet(item.key.name);
+                                            MyApp.SignedPetsTable.signPet(item.key.name);
                                         },
                                     },
-                                    "Signer cette pétition")
+                                    "Annuler ma signature")
                                 )
                             ])
                         ])
@@ -975,7 +990,22 @@ MyApp.SignedPetsTable = {
                 }
             }, "Suivant"),
         ]);
-    }
+    },
+	signPet: function(signedPet) {
+	    var data = {
+            'signedPet': signedPet,
+            'email': MyApp.Profile.userData.email,
+            'access_token': encodeURIComponent(MyApp.Profile.userData.id)
+        };
+	    m.request ({
+	 		method: "POST",
+            url: "_ah/api/myApi/v1/petition/sign",
+            params: data,
+		}).then(function() {
+            MyApp.User.getSignedPets();
+            m.redraw();
+        });
+	}
 };
 
 MyApp.Login = {
