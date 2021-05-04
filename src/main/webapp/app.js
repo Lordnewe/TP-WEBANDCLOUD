@@ -616,7 +616,7 @@ MyApp.PostNewPet = {
                         pet_goal = $("#new_pet_goal").val();
                         pet_body = $("#new_pet_body").val();
                         pet_tags = $("#new_pet_tags").val();
-                        MyApp.Profile.newPet(pet_goal,pet_title,pet_tags,pet_body);
+                        MyApp.PostNewPet.newPet(pet_goal,pet_title,pet_tags,pet_body);
                     }},
                     [
                         m('div', {
@@ -693,7 +693,10 @@ MyApp.PostNewPet = {
             method: "POST",
             url: "_ah/api/myApi/v1/petition/create",
             params: data,
-        });
+        }).then(function(response) {
+            m.route.set("/");
+        })
+        ;
     }
 };
 
