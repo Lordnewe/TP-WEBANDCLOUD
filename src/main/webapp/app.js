@@ -3,6 +3,7 @@
 m.route(document.body, "/", {
     "/" : {
         onmatch: function() {
+            MyApp.Homepage.getTopTen();
             return MyApp.Homepage;
         }
     },
@@ -694,6 +695,7 @@ MyApp.PostNewPet = {
             url: "_ah/api/myApi/v1/petition/create",
             params: data,
         }).then(function(response) {
+            MyApp.Homepage.getTopTen();
             m.route.set("/");
         })
         ;
