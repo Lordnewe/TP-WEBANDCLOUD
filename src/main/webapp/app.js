@@ -8,7 +8,7 @@ m.route(document.body, "/", {
     },
     "/myProfile": {
         onmatch: function() {
-            if (!auth2.isSignedIn.get()) m.route.set("/login");
+            if (!auth2.isSignedIn.get()) m.route.set("/notLogged");
             else {
                 MyApp.User.userData = {};
                 MyApp.Profile.getCreatedPets();
@@ -19,7 +19,7 @@ m.route(document.body, "/", {
     },
     "/postNewPet": {
         onmatch: function() {
-            if (!auth2.isSignedIn.get()) m.route.set("/login");
+            if (!auth2.isSignedIn.get()) m.route.set("/notLogged");
             else {
                 return MyApp.PostNewPet;
             }
@@ -38,9 +38,9 @@ m.route(document.body, "/", {
             }
         }
     },
-    "/login": {
+    "/notLogged": {
         onmatch: function () {
-            return MyApp.Login;
+            return MyApp.NotLogged;
         }
     }
 });
@@ -1039,7 +1039,7 @@ MyApp.SignedPetsTable = {
 	}
 };
 
-MyApp.Login = {
+MyApp.NotLogged = {
     view: function() {
         return m('div',[
             m(MyApp.Navbar),
