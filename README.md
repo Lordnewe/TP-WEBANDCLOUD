@@ -13,7 +13,7 @@ Voici les différents liens utiles
 * Lien vers le [Github]()
 
 ## Les objectifs de ce projet
-Dans le cadre du module de développement cloud encadré par M. Molly enseignant chercheur à la Faculté des Sciences et Techniques de l'Université de Nantes,
+Dans le cadre du module de développement cloud encadré par M. Molli enseignant chercheur à la Faculté des Sciences et Techniques de l'Université de Nantes,
 nous devons développer une application de gestion de pétitions en s'appuyant sur des technologies cloud, dans notre contexte Google App Engine et son Datastore.
 
 ## Cahier des charges
