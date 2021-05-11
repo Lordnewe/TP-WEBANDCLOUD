@@ -288,6 +288,7 @@ MyApp.SearchedPetList = {
                         },[
                             m('thead', [
                                 m('tr', [
+                                    m('th', "Publié par"),
                                     m('th', "Titre"),
                                     m('th', "Description"),
                                     m('th', "Votes"),
