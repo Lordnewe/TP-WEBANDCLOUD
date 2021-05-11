@@ -9,7 +9,7 @@ public class Petition {
 	public Integer goal;
 	public Integer nbVotants;
 	public String name;
-	public ArrayList<String> tags;
+	public String tags;
 	public ArrayList<String> votants;
 	public String id;
 

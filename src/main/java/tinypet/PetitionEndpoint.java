@@ -59,7 +59,10 @@ public class PetitionEndpoint {
 			throw new UnauthorizedException("Invalid credentials");
 		}
 		@SuppressWarnings("unchecked")
+		
 		ArrayList<String> tags = new ArrayList<String>();
+		tags.addAll(Arrays.asList(pet.tags.split(",")));
+		
 		ArrayList<String> votants = new ArrayList<String>();
 		votants.add(" ");
 
