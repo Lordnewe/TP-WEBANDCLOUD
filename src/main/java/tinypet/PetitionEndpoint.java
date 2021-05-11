@@ -59,9 +59,7 @@ public class PetitionEndpoint {
 			throw new UnauthorizedException("Invalid credentials");
 		}
 		@SuppressWarnings("unchecked")
-		ArrayList<String> tags = (ArrayList<String>) pet.tags;
-		//pour test
-		tags.add("toto");
+		ArrayList<String> tags = new ArrayList<String>();
 		ArrayList<String> votants = new ArrayList<String>();
 		votants.add(" ");
 

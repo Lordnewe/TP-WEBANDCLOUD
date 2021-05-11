@@ -683,12 +683,11 @@ MyApp.PostNewPet = {
     },
     newPet: function(goal, title, tags, body) {
         var data= {};
-        var arrayTags = tags.split(',');
         data= {
             'body': body,
             'goal': goal,
             'title': title,
-            'tags': arrayTags,
+            'tags': tags,
             'access_token': encodeURIComponent(MyApp.Profile.userData.id)
         };
         return m.request({
