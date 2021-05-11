@@ -60,6 +60,8 @@ public class PetitionEndpoint {
 		}
 		@SuppressWarnings("unchecked")
 		ArrayList<String> tags = (ArrayList<String>) pet.tags;
+		//pour test
+		tags.add("toto");
 		ArrayList<String> votants = new ArrayList<String>();
 		votants.add(" ");
 
