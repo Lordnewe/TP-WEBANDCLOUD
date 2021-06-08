@@ -31,6 +31,11 @@ m.route(document.body, "/", {
             return MyApp.SearchedPetList;
         }
     },
+    "/signataires": {
+        onmatch : function () {
+            return MyApp.SignatairesList;
+        }
+    },
     "/user": {
         onmatch : function () {
             if(Object.keys(MyApp.User.userData).length !=0) return MyApp.User;
@@ -296,6 +301,7 @@ MyApp.SearchedPetList = {
                                     m('th', "Date de publication"),
                                     m('th', "Tags"),
                                     m('th', ""),
+                                    m('th', ""),
                                 ])
                             ]),
                                 MyApp.SearchedPetList.petList.map(function(pet) {
@@ -319,6 +325,14 @@ MyApp.SearchedPetList = {
                                                         },
                                                     },
                                                     "Signer cette pétition")
+                                                ),
+                                                m("td", m("button", {
+                                                        "class":"button is-info",
+                                                        onclick: function () {
+                                                            MyApp.Homepage.getSignataires(pet.key.name);
+                                                        },
+                                                    },
+                                                    "Liste des signataires")
                                                 )
                                             ])
                                         ])
@@ -372,6 +386,63 @@ MyApp.SearchedPetList = {
     }
 };
 
+MyApp.SignatairesList = {
+    pet: {},
+    view: function (vnode) {
+        return (
+            m("div",
+                m(MyApp.Navbar),
+                    m("div.container", [
+                        m('div', {
+                            class:'subtitle'
+                        },
+                            m("h1","Liste des signataires de la pétition '"+MyApp.SignatairesList.pet.title+"'")
+                        ),
+                        m('table', {
+                            class:'table is-fullwidth'
+                        },[
+                            m('thead', [
+                                m('tr', [
+                                    m('th', "Adresse mail")
+                                ])
+                            ]),
+                                MyApp.SignatairesList.pet.votants.map(function(votant) {
+                                        return m('tbody', [
+                                            m("tr", [
+                                                m('td', m('label', votant))
+                                            ])
+                                        ])
+                                })
+                        ])
+                    ]
+                )
+            )
+        );
+    },
+    goToUser: function (email) {
+        m.request({
+            method: "GET",
+            params: {
+                'email': email,
+            },
+            url: "_ah/api/myApi/v1/user/getInfos"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id),        })
+        .then(function (response) {
+            var user = response.properties;
+            MyApp.User.userData = {
+                email:user.email,
+                name:user.name,
+                invertedName:user.invertedName,
+                firstName:user.firstName,
+                lastName:user.lastName,
+                url:user.url,
+                nextToken:"",
+                pets:[],
+            };
+            MyApp.User.getCreatedPets();
+            m.route.set("/user");
+        });
+    }
+};
 
 MyApp.User = {
     userData: {},
@@ -522,7 +593,14 @@ MyApp.Homepage = {
                                                     onclick: function () {
                                                         MyApp.Homepage.signPet(pet.key.name);
                                                     }
-                                                },"Signer")
+                                                },"Signer"),
+                                                m("a", {
+                                                    href: "#",
+                                                    class: "card-footer-item",
+                                                    onclick: function () {
+                                                        MyApp.Homepage.getSignataires(pet.key.name);
+                                                    }
+                                                },"Liste des signataires")
                                             ])
                                         ])
                                     ]);
@@ -597,6 +675,32 @@ MyApp.Homepage = {
             };
             MyApp.User.getCreatedPets();
             m.route.set("/user");
+        });
+    },
+    getSignataires: function (petition) {
+        m.request({
+            method: "GET",
+            params: {
+                'petition': petition
+            },
+            url: "_ah/api/myApi/v1/petitions/signataires"+'?access_token='+encodeURIComponent(MyApp.Profile.userData.id)
+        })
+        .then(function(response) {
+            pet=response.properties;
+            petKey=response.key;
+            MyApp.SignatairesList.pet = {
+                key:petKey,
+                title:pet.title,
+                owner:pet.owner,
+                date:pet.date,
+                body:pet.body,
+                goal:pet.goal,
+                tags:pet.tags,
+                votants:pet.votants,
+                nbVotants:pet.nbVotants
+            };
+            console.log(MyApp.SignatairesList.signList);
+            m.route.set("/signataires");
         });
     }
 };
@@ -885,6 +989,7 @@ MyApp.PetsTable = {
                         m('th', "Date de publication"),
                         m('th', "Tags"),
                         m('th', ""),
+                        m('th', ""),
                     ])
                 ]),
                 (vnode.attrs.profile.userData.petsCreated != undefined)?
@@ -905,6 +1010,14 @@ MyApp.PetsTable = {
                                                 },
                                             },
                                             "Supprimer cette pétition")
+                                        ),
+                                        m("td", m("button", {
+                                                "class":"button is-info",
+                                                onclick: function() {
+                                                    MyApp.Homepage.getSignataires(item.key.name);
+                                                },
+                                            },
+                                            "Lister les signataires")
                                         )
                                     ])
                                 ])
@@ -991,6 +1104,7 @@ MyApp.SignedPetsTable = {
                         m('th', "Date de publication"),
                         m('th', "Tags"),
                         m('th', ""),
+                        m('th', ""),
                     ])
                 ]),
                 (vnode.attrs.profile.userData.petsSigned != undefined)?
@@ -1010,6 +1124,14 @@ MyApp.SignedPetsTable = {
                                         },
                                     },
                                     "Annuler ma signature")
+                                ),
+                                m("td", m("button", {
+                                        "class":"button is-info",
+                                        onclick: function () {
+                                            MyApp.Homepage.getSignataires(item.key.name);
+                                        },
+                                    },
+                                    "Liste des signataires")
                                 )
                             ])
                         ])

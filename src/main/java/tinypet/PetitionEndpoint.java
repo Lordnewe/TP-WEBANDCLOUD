@@ -177,8 +177,8 @@ public class PetitionEndpoint {
 
 		Query q = new Query("Petition").setFilter(
 			new CompositeFilter(CompositeFilterOperator.OR, Arrays.asList(
-				new FilterPredicate("title", FilterOperator.IN, search),
-				new FilterPredicate("tags", FilterOperator.IN, search)
+				new FilterPredicate("title", FilterOperator.EQUAL, search),
+				new FilterPredicate("tags", FilterOperator.EQUAL, search)
 		)));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -219,4 +219,29 @@ public class PetitionEndpoint {
 
 		return null;
 	}
+
+	/**
+	 * Get signataires from petition
+	 * @param user
+	 * @param petition
+	 * @return
+	 */
+    @ApiMethod(name = "getSignataires", path="petitions/signataires", httpMethod = HttpMethod.GET)
+	public Entity getUser(User user, @Named("petition") String petition)
+        throws UnauthorizedException {
+
+        /* if (user == null) {
+            throw new UnauthorizedException("Invalid credentials");
+        } */
+
+        DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+        Query userQuery = new Query("Petition").setFilter(
+				new FilterPredicate("__key__", FilterOperator.EQUAL, KeyFactory.createKey("Petition", petition))
+				);
+        PreparedQuery preparedUserQuery = datastore.prepare(userQuery);
+        Entity pet = preparedUserQuery.asSingleEntity();
+
+        return pet;
+    }
+
 }
