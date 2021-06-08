@@ -177,8 +177,8 @@ public class PetitionEndpoint {
 
 		Query q = new Query("Petition").setFilter(
 			new CompositeFilter(CompositeFilterOperator.OR, Arrays.asList(
-				new FilterPredicate("title", FilterOperator.EQUAL, search),
-				new FilterPredicate("tags", FilterOperator.EQUAL, search)
+				new FilterPredicate("title", FilterOperator.IN, search),
+				new FilterPredicate("tags", FilterOperator.IN, search)
 		)));
 
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
