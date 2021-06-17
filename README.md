@@ -52,7 +52,7 @@ Nous avons réalisé des calculs sur le temps de réponse de deux requêtes que 
 
 Nous avons vérifié les temps de réponse grâce à la console Firefox dans l'onglet "Réseau".
 Chaque requête a été lancé 10 fois en désactivant le cache.
-Ces tests nous permettent de vérifier que les temps de réponse sont bien inférieurs à 500 ms.f
+Ces tests nous permettent de vérifier que les temps de réponse sont bien inférieurs à 500 ms.
 
 ### Affichage du top 10 des pétitions - Requête GET
 
@@ -89,13 +89,13 @@ Voici la liste des essaies numérotés avec le temps de réponse correspondant :
 La moyenne est de 71,2 ms.
 
 
-## Capture d'écran des entités utilisées
+## Captures d'écran des entités utilisées
 
-### User
+### Entité User
 ![](images_readme/user_entity.png)
-### Sign
+### Entité Sign
 ![](images_readme/sign_entity.png)
-### Petition
+### Entité Petition
 ![](images_readme/pet_entity.png)
 
 
