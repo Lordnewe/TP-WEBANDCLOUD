@@ -104,19 +104,19 @@ La moyenne est de 71,2 ms.
 Voici quelques captures d'écran du site développé.
 
 ### Page d'accueil
-![](images_readme/site_home.png)
+![](images_readme/site_home.PNG)
 
 ### Résultats de la recherche
-![](images_readme/site_search_result.png)
+![](images_readme/site_search_result.PNG)
 
 ### Mes pétitions signées
-![](images_readme/site_signed_pets.png)
+![](images_readme/site_signed_pets.PNG)
 
 ### Mes pétitions crées
-![](images_readme/site_created_pets.png)
+![](images_readme/site_created_pets.PNG)
 
 ### Création d'une pétition
-![](images_readme/site_post_pet.png)
+![](images_readme/site_post_pet.PNG)
 
 ### La liste des signataires
-![](images_readme/site_users_pets.png)
+![](images_readme/site_users_pets.PNG)
